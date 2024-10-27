@@ -27,24 +27,32 @@ from pycider.procs import (
 )
 
 
-if __name__ == "__main__":
+def cat_and_bulb() -> None:
+
+    cnb = InMemory(ComposeDecider.compose(Cat(), Bulb()))
+
+    cnb(Left(CatCommandWakeUp()))
+    cnb(Left(CatCommandGetToSleep()))
+    cnb(Right(BulbCommandFit(max_uses=5)))
+    cnb(Right(BulbCommandSwitchOn()))
+    cnb(Right(BulbCommandSwitchOff()))
+
+    print(f"{cnb.state=}")
+
+
+def in_memory_many_cats() -> None:
     in_memory = InMemory(ManyDecider[str, Event, Command, State](Cat))
 
-    in_memory(("Steve", CatCommandGetToSleep()))
-    in_memory(("Steve", CatCommandWakeUp()))
+    in_memory(("boulette", CatCommandGetToSleep()))
+    in_memory(("boulette", CatCommandWakeUp()))
 
-    in_memory(("Joe", CatCommandGetToSleep()))
-    in_memory(("Joe", CatCommandWakeUp()))
+    in_memory(("guevara", CatCommandWakeUp()))
+    in_memory(("guevara", CatCommandGetToSleep()))
 
     print(f"{in_memory.state=}")
 
-    cd = ComposeDecider.compose(ManyDecider[str, Event, Command, State](Cat), Cat())
-    composed_cats_in_memory = InMemory(cd)
-    composed_cats_in_memory(Left(("Steve", CatCommandGetToSleep())))
-    composed_cats_in_memory(Right(CatCommandGetToSleep()))
 
-    print(f"{composed_cats_in_memory.state=}")
-
+def compose_process() -> None:
     cat_and_bulb = ComposeDecider.compose(Cat(), Bulb())
 
     def select_event(event):
@@ -74,3 +82,12 @@ if __name__ == "__main__":
     cat_b(Right(BulbCommandSwitchOff()))
 
     print(f"{cat_b.state=}")
+
+
+if __name__ == "__main__":
+
+    in_memory_many_cats()
+
+    cat_and_bulb()
+
+    compose_process()
