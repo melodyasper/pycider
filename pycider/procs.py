@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import Generic, Sequence, TypeVar
 
 from pycider.deciders import Command, Decider, Event, State
@@ -121,26 +122,35 @@ class CatLight(IProcess[Event, Command, State]):
         return isinstance(state, CatLightStateIdle)
 
 
-class Process(Generic[E, C, S]):
+EI = TypeVar("EI")
+CI = TypeVar("CI")
+EO = TypeVar("EO")
+CO = TypeVar("CO")
+
+
+class Process(Generic[EI, CI, S, EO, CO]):
     @classmethod
     def adapt(
-        cls, select_event, convert_command, p: IProcess[E, C, S]
-    ) -> IProcess[E, C, S]:
-        class AnonymousProcess(IProcess[E, C, S]):
-            def evolve(self, state: S, event: E) -> S:
-                event = select_event(event)
-                if event is None:
+        cls,
+        select_event: Callable[[EI], EO | None],
+        convert_command: Callable[[CO], CI],
+        p: IProcess[EO, CO, S],
+    ) -> IProcess[EI, CI, S]:
+        class AnonymousProcess(IProcess[EI, CI, S]):
+            def evolve(self, state: S, event: EI) -> S:
+                new_event = select_event(event)
+                if new_event is None:
                     return state
-                return p.evolve(state, event)
+                return p.evolve(state, new_event)
 
-            def resume(self, state: S) -> Sequence[C]:
+            def resume(self, state: S) -> Sequence[CI]:
                 return list(map(convert_command, p.resume(state)))
 
-            def react(self, state: S, event: E) -> Sequence[C]:
-                event = select_event(event)
-                if event is None:
+            def react(self, state: S, event: EI) -> Sequence[CI]:
+                new_event = select_event(event)
+                if new_event is None:
                     return []
-                return list(map(convert_command, p.react(state, event)))
+                return list(map(convert_command, p.react(state, new_event)))
 
             def initial_state(self) -> S:
                 return p.initial_state()
