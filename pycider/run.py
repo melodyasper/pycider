@@ -81,5 +81,3 @@ def compose_process() -> None:
     cat_b(Right(BulbCommandSwitchOff()))
 
     print(f"{cat_b.state=}")
-
-
