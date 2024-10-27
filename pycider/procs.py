@@ -12,11 +12,23 @@ class IProcess(ABC, Generic[E, C, S]):
 
     @abstractmethod
     def evolve(self, state: S, event: E) -> S:
-        """Update the process state based on the current event.
+        """Returns an updated state based on the current event.
 
         Paramters
             state: State of the current process
-            event: Event
+            event: Event generated from commands procesed
+
+        Returns
+            An updated state.
+        """
+        pass
+
+    @abstractmethod
+    def resume(self, state: S) -> Sequence[C]:
+        """Returns a sequence of commands to resume a process from a given state.
+
+        Parameters
+            state: State of the current process
 
         Returns
             An sequence of commands to act on.
@@ -24,24 +36,12 @@ class IProcess(ABC, Generic[E, C, S]):
         pass
 
     @abstractmethod
-    def resume(self, state: S) -> Sequence[C]:
-        """Resume to the next command from a starting state.
-
-        Parameters
-            state: State of the current process
-
-        Returns
-            An iterable set of commands to act on.
-        """
-        pass
-
-    @abstractmethod
     def react(self, state: S, event: E) -> Sequence[C]:
-        """React to an event by generating new commands.
+        """Returns a sequence of commands as a reaction to an event.
 
         Parameters
             state: State of the current process
-            event: Event being reacted to
+            event: Event currently being processed
 
         Returns
             A sequence of commands to act on.
@@ -50,22 +50,22 @@ class IProcess(ABC, Generic[E, C, S]):
 
     @abstractmethod
     def initial_state(self) -> S:
-        """Starting state for a process.
+        """Returns the starting state for a process.
 
         Returns
-            The base state to begin the process with
+            A state representing the start of a process.
         """
         pass
 
     @abstractmethod
     def is_terminal(self, state: S) -> bool:
-        """Checks if the current state is the end state for the process.
+        """Returns if a process's state is terminal.
 
         Parameters
             state: State of the current process
 
         Returns
-            A boolean indicating if a process is finished.
+            A boolean indicating if a process has run till completion.
         """
         pass
 

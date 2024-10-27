@@ -34,48 +34,48 @@ SO = TypeVar("SO")
 class BaseDecider(ABC, Generic[E, C, SI, SO]):
     @abstractmethod
     def initial_state(self) -> SO:
-        """Starting state for a process.
+        """Starting state for a decider.
 
         Returns
-            The base state to begin the process with
+            The base state a decider
         """
         pass
 
     @abstractmethod
     def evolve(self, state: SI, event: E) -> SO:
-        """Update the process state based on the current event.
+        """Returns an updated state based on the current event.
 
         Paramters
-            state: State of the current process
+            state: State of the current decider
             event: Event
 
         Returns
-            An sequence of commands to act on.
+            An updated state
         """
         pass
 
     @abstractmethod
     def is_terminal(self, state: SI) -> bool:
-        """Checks if the current state is the end state for the process.
+        """Returns if the current state is terminal.
 
         Parameters
-            state: State of the current process
+            state: State of the current decider
 
         Returns
-            A boolean indicating if a process is finished.
+            A boolean indicating if the decider is finished.
         """
         pass
 
     @abstractmethod
     def decide(self, command: C, state: SI) -> Sequence[E]:
-        """React to an event by generating new commands.
+        """Return a set of events from a command and state.
 
         Parameters
-            command: Operation to be processed
-            state: State of the current process
+            command: Action to be performed
+            state: State of the current decider
 
         Returns
-            A sequence of events to evolve the state on.
+            A sequence of events resulting from the command.
         """
         pass
 

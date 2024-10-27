@@ -71,7 +71,6 @@ def compose_process() -> None:
                 raise RuntimeError("Improper state")
 
     adapted_process = Process.adapt(select_event, command_converter, CatLight())
-
     cat_bulb = ProcessCombineWithDecider.combine(adapted_process, cat_and_bulb)
     cat_b = InMemory(cat_bulb)
     cat_b(Right(BulbCommandFit(max_uses=5)))
