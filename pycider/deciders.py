@@ -383,3 +383,28 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
                 return decider.is_terminal(fsi(state))
 
         return AnonymousDecider()
+
+
+SA = TypeVar("SA")
+SB = TypeVar("SB")
+
+
+class MapDecider(Generic[E, C, SI, SA, SB]):
+    @classmethod
+    def map(
+        f: Callable[[SA], SB], d: BaseDecider[E, C, SI, SA]
+    ) -> BaseDecider[E, C, SI, SB]:
+        class AnonymousDecider(BaseDecider[E, C, SI, SB]):
+            def decide(self, command: C, state: SI) -> Sequence[E]:
+                return d.decide(command, state)
+
+            def evolve(self, state: SI, event: E) -> SB:
+                return f(d.evolve(state, event))
+
+            def initial_state(self) -> SB:
+                return f(d.initial_state())
+
+            def is_terminal(self, state: SI) -> bool:
+                return d.is_terminal(state)
+
+        return AnonymousDecider()
