@@ -1,9 +1,11 @@
 [tool.poetry]
 name = "pycider"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "Aggregates composition for domain driven design in Python"
 authors = ["Melody Asper <melodyaheath@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/melodyasper/pycider"
+keywords = ["ddd", "domain", "design", "decider", "deciders", "aggregates", "aggregate", "composition"]
 
 [tool.poetry.dependencies]
 python = "^3.12"

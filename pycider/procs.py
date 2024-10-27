@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Generic, Sequence, TypeVar
 
-from pycider.deciders import Command, Decider, Event, State
+from pycider.deciders import Decider
 
 E = TypeVar("E")
 C = TypeVar("C")
@@ -69,57 +69,6 @@ class IProcess(ABC, Generic[E, C, S]):
             A boolean indicating if a process has run till completion.
         """
         pass
-
-
-class CatLightEventSwitchedOn(Event):
-    pass
-
-
-class CatLightEventWokeUp(Event):
-    pass
-
-
-class CatLightCommandWakeUp(Command):
-    pass
-
-
-class CatLightStateIdle(State):
-    pass
-
-
-class CatLightStateWakingUp(State):
-    pass
-
-
-class CatLight(IProcess[Event, Command, State]):
-    def evolve(self, state: State, event: Event) -> State:
-        match event:
-            case CatLightEventSwitchedOn():
-                return CatLightStateWakingUp()
-            case CatLightEventWokeUp():
-                return CatLightStateIdle()
-            case _:
-                return state
-
-    def resume(self, state: State) -> Sequence[Command]:
-        match state:
-            case CatLightStateWakingUp():
-                return [CatLightCommandWakeUp()]
-            case _:
-                return []
-
-    def react(self, state: State, event: Event) -> Sequence[Command]:
-        match state, event:
-            case CatLightStateWakingUp(), CatLightEventSwitchedOn():
-                return [CatLightCommandWakeUp()]
-            case _:
-                return []
-
-    def initial_state(self) -> State:
-        return CatLightStateIdle()
-
-    def is_terminal(self, state: State) -> bool:
-        return isinstance(state, CatLightStateIdle)
 
 
 EI = TypeVar("EI")

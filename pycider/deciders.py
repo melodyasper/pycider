@@ -1,4 +1,3 @@
-import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, MutableMapping
@@ -7,21 +6,6 @@ from typing import Generic, Sequence, TypeVar
 from pycider.types import Either, Left, Right
 
 logger = logging.getLogger(__name__)
-
-
-@dataclasses.dataclass(frozen=True)
-class State(ABC):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class Event:
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class Command:
-    pass
 
 
 E = TypeVar("E")
@@ -82,148 +66,6 @@ class BaseDecider(ABC, Generic[E, C, SI, SO]):
 
 class Decider(BaseDecider[E, C, S, S], Generic[E, C, S]):
     pass
-
-
-class CatCommandWakeUp(Command):
-    pass
-
-
-class CatCommandGetToSleep(Command):
-    pass
-
-
-class CatStateAsleep(State):
-    pass
-
-
-class CatStateAwake(State):
-    pass
-
-
-class CatEventGotToSleep(Event):
-    pass
-
-
-class CatEventWokeUp(Event):
-    pass
-
-
-class Cat(Decider[Event, Command, State]):
-
-    def initial_state(self) -> State:
-        return CatStateAwake()
-
-    def is_terminal(self, state: State) -> bool:
-        return False
-
-    def decide(self, command: Command, state: State) -> Sequence[Event]:
-        match (command, state):
-            case (CatCommandWakeUp(), CatStateAsleep()):
-                return [CatEventWokeUp()]
-            case CatCommandGetToSleep(), CatStateAwake():
-                return [CatEventGotToSleep()]
-            case _:
-                return []
-
-    def evolve(self, state: State, event: Event) -> State:
-        match (state, event):
-            case (CatStateAwake(), CatEventGotToSleep()):
-                return CatStateAsleep()
-            case (CatStateAsleep(), CatEventWokeUp()):
-                return CatStateAwake()
-            case _:
-                return state
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbCommandFit(Command):
-    max_uses: int
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbCommandSwitchOn(Command):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbCommandSwitchOff(Command):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbEventFitted(Event):
-    max_uses: int
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbEventSwitchedOn(Event):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbEventSwitchedOff(Event):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbEventBlew(Event):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbStateNotFitted(State):
-    pass
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbStateWorking(State):
-    is_on: bool
-    remaining_uses: int
-
-
-@dataclasses.dataclass(frozen=True)
-class BulbStateBlown(State):
-    pass
-
-
-class Bulb(Decider[Event, Command, State]):
-    def decide(self, command: Command, state: State) -> Sequence[Event]:
-        match command, state:
-            case BulbCommandFit(), BulbStateNotFitted():
-                return [BulbEventFitted(max_uses=command.max_uses)]
-            case BulbCommandSwitchOn(), BulbStateWorking(
-                is_on=False, remaining_uses=remaining_uses
-            ) if remaining_uses > 0:
-                return [BulbEventSwitchedOn()]
-            case BulbCommandSwitchOn(), BulbStateWorking(is_on=False):
-                return [BulbEventBlew()]
-            case BulbCommandSwitchOff(), BulbStateWorking(is_on=True):
-                return [BulbEventSwitchedOff()]
-            case _:
-                return []
-
-    def evolve(self, state: State, event: Event) -> State:
-        match state, event:
-            case BulbStateNotFitted(), BulbEventFitted():
-                return BulbStateWorking(is_on=False, remaining_uses=event.max_uses)
-            case BulbStateWorking(), BulbEventSwitchedOn():
-                return BulbStateWorking(
-                    is_on=True, remaining_uses=state.remaining_uses - 1
-                )
-            case BulbStateWorking(), BulbEventSwitchedOff():
-                return BulbStateWorking(
-                    is_on=False, remaining_uses=state.remaining_uses
-                )
-            case BulbStateWorking(), BulbEventBlew():
-                return BulbStateBlown()
-            case _:
-                return state
-
-    def initial_state(self) -> State:
-        return BulbStateNotFitted()
-
-    def is_terminal(self, state: State) -> bool:
-        return isinstance(state, BulbStateBlown)
 
 
 CX = TypeVar("CX")
