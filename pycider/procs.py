@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Sequence, TypeVar
 
-from pycider.deciders import Decider, Event, Command, State
+from pycider.deciders import Command, Decider, Event, State
 
 E = TypeVar("E")
 C = TypeVar("C")

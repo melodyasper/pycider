@@ -1,8 +1,9 @@
+import dataclasses
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, MutableMapping
 from typing import Generic, Sequence, TypeVar
-import dataclasses
-import logging
+
 from pycider.types import Either, Left, Right
 
 logger = logging.getLogger(__name__)

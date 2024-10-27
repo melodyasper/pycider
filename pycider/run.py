@@ -14,7 +14,6 @@ from pycider.deciders import (
     ManyDecider,
     State,
 )
-from pycider.types import Left, Right
 from pycider.infra import InMemory
 from pycider.procs import (
     CatLight,
@@ -24,6 +23,7 @@ from pycider.procs import (
     Process,
     ProcessCombineWithDecider,
 )
+from pycider.types import Left, Right
 
 
 def cat_and_bulb() -> None:

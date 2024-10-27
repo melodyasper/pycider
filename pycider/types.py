@@ -1,6 +1,5 @@
 from typing import Generic, TypeVar
 
-
 TA = TypeVar("TA")
 TB = TypeVar("TB")
 
