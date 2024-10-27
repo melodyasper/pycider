@@ -12,7 +12,7 @@ You can create `Process` or a `Decider`. A simple example of this can be found u
 
 ## Decider 
 
-`Decider` is a simple state machine that seperate state changes and actions. Actions are `Command`s which when executed return `Event`s, representing the results from executing a `Command`. You can use `Event`'s to deterministically update the `State` allowing replayability and easy serialization by only saving `Event`'s. 
+`Decider` is a simple state machine that seperates state changes and actions. `Command`s are actions which when executed return `Event`s representing the results from the actions. You can use `Event`'s to deterministically update the `State` allowing replayability and easy serialization by only saving `Event`'s. 
 
 * `Command`s are turned into `Event`'s through `decide()` calls.
 * `Event`'s deterministically update the `State` through `evolve()` calls.
