@@ -413,6 +413,7 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
 class Map2Decider(Generic[E, C, S, SX, SY, SI]):
     @classmethod
     def map(
+        cls,
         f: Callable[[SX, SY], S],
         dx: BaseDecider[E, C, SI, SX],
         dy: BaseDecider[E, C, SI, SY],
@@ -436,3 +437,9 @@ class Map2Decider(Generic[E, C, S, SX, SY, SI]):
                 return dx.is_terminal(state) and dy.is_terminal(state)
 
         return AnonymousDecider()
+
+
+def decider_apply(
+    f: BaseDecider[E, C, SI, Callable[[SX], SO]], d: BaseDecider[E, C, SI, SX]
+) -> BaseDecider[E, C, SI, SO]:
+    return Map2Decider.map(lambda f, x: f(x), f, d)
