@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import MutableMapping
+from collections.abc import Callable, MutableMapping
 from typing import Generic, Sequence, TypeVar
 import dataclasses
 import logging
@@ -25,11 +25,13 @@ class Command:
 E = TypeVar("E")
 C = TypeVar("C")
 S = TypeVar("S")
+SI = TypeVar("SI")
+SO = TypeVar("SO")
 
 
-class Decider(ABC, Generic[E, C, S]):
+class BaseDecider(ABC, Generic[E, C, SI, SO]):
     @abstractmethod
-    def initial_state(self) -> S:
+    def initial_state(self) -> SO:
         """Starting state for a process.
 
         Returns
@@ -38,7 +40,7 @@ class Decider(ABC, Generic[E, C, S]):
         pass
 
     @abstractmethod
-    def evolve(self, state: S, event: E) -> S:
+    def evolve(self, state: SI, event: E) -> SO:
         """Update the process state based on the current event.
 
         Paramters
@@ -51,7 +53,7 @@ class Decider(ABC, Generic[E, C, S]):
         pass
 
     @abstractmethod
-    def is_terminal(self, state: S) -> bool:
+    def is_terminal(self, state: SI) -> bool:
         """Checks if the current state is the end state for the process.
 
         Parameters
@@ -63,7 +65,7 @@ class Decider(ABC, Generic[E, C, S]):
         pass
 
     @abstractmethod
-    def decide(self, command: C, state: S) -> Sequence[E]:
+    def decide(self, command: C, state: SI) -> Sequence[E]:
         """React to an event by generating new commands.
 
         Parameters
@@ -74,6 +76,10 @@ class Decider(ABC, Generic[E, C, S]):
             A sequence of events to evolve the state on.
         """
         pass
+
+
+class Decider(BaseDecider[E, C, S, S], Generic[E, C, S]):
+    pass
 
 
 class CatCommandWakeUp(Command):
@@ -337,5 +343,44 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
 
             def is_terminal(self, state: tuple[SX, SY]) -> bool:
                 return dx.is_terminal(state[0]) and dy.is_terminal(state[1])
+
+        return AnonymousDecider()
+
+
+EO = TypeVar("EO")
+CO = TypeVar("CO")
+FEO = TypeVar("FEO")
+FSI = TypeVar("FSI")
+# // adapt a decider to different commands, events and state
+
+
+class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
+    @classmethod
+    def adapt(
+        cls,
+        fci: Callable[[C], CO | None],
+        fei: Callable[[E], EO | None],
+        feo: Callable[[EO], E],
+        fsi: Callable[[S], SO],
+        decider: Decider[EO, CO, SO],
+    ) -> BaseDecider[E, C, S, SO]:
+        class AnonymousDecider(BaseDecider[E, C, S, SO]):
+            def decide(self, command: C, state: S) -> Sequence[E]:
+                new_command = fci(command)
+                if new_command is None:
+                    return []
+                return list(map(feo, decider.decide(new_command, fsi(state))))
+
+            def evolve(self, state: S, event: E) -> SO:
+                new_event = fei(event)
+                if new_event is None:
+                    return fsi(state)
+                return decider.evolve(fsi(state), new_event)
+
+            def initial_state(self) -> SO:
+                return decider.initial_state()
+
+            def is_terminal(self, state: S) -> bool:
+                return decider.is_terminal(fsi(state))
 
         return AnonymousDecider()
