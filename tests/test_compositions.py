@@ -6,8 +6,8 @@ from pycider.deciders import (
     Decider,
     ManyDecider,
 )
-from pycider.infra import InMemory
-from pycider.procs import (
+from pycider.utils import InMemory
+from pycider.processes import (
     IProcess,
     Process,
     ProcessCombineWithDecider,
