@@ -278,13 +278,6 @@ class ManyDecider(
         return {}
 
 
-CX = TypeVar("CX")
-EX = TypeVar("EX")
-SX = TypeVar("SX")
-CY = TypeVar("CY")
-EY = TypeVar("EY")
-SY = TypeVar("SY")
-
 TA = TypeVar("TA")
 TB = TypeVar("TB")
 
@@ -304,6 +297,13 @@ class Right(Generic[TB]):
 
 
 Either = Left[TA] | Right[TB]
+
+CX = TypeVar("CX")
+EX = TypeVar("EX")
+SX = TypeVar("SX")
+CY = TypeVar("CY")
+EY = TypeVar("EY")
+SY = TypeVar("SY")
 
 
 class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
@@ -351,7 +351,6 @@ EO = TypeVar("EO")
 CO = TypeVar("CO")
 FEO = TypeVar("FEO")
 FSI = TypeVar("FSI")
-# // adapt a decider to different commands, events and state
 
 
 class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
