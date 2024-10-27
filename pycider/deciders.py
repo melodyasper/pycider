@@ -275,6 +275,25 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
         return AnonymousDecider()
 
 
+class NeutralDecider:
+    @classmethod
+    def neutral(cls):
+        class AnonymousDecider(Decider[None, None, tuple[()]]):
+            def decide(self, command: None, state: tuple[()]) -> Sequence[None]:
+                return []
+
+            def evolve(self, state: tuple[()], event: None) -> tuple[()]:
+                return ()
+
+            def initial_state(self) -> tuple[()]:
+                return ()
+
+            def is_terminal(self, state: tuple[()]) -> bool:
+                return True
+
+        return AnonymousDecider()
+
+
 I = TypeVar("I")  # identifier
 
 
