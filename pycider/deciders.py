@@ -408,3 +408,31 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
                 return d.is_terminal(state)
 
         return AnonymousDecider()
+
+
+class Map2Decider(Generic[E, C, S, SX, SY, SI]):
+    @classmethod
+    def map(
+        f: Callable[[SX, SY], S],
+        dx: BaseDecider[E, C, SI, SX],
+        dy: BaseDecider[E, C, SI, SY],
+    ) -> BaseDecider[E, C, SI, S]:
+        class AnonymousDecider(BaseDecider[E, C, SI, S]):
+            def decide(self, command: C, state: SI) -> Sequence[E]:
+                events: list[E] = []
+                events.extend(dx.decide(command, state))
+                events.extend(dy.decide(command, state))
+                return events
+
+            def evolve(self, state: SI, event: E) -> S:
+                sx = dx.evolve(state, event)
+                sy = dy.evolve(state, event)
+                return f(sx, sy)
+
+            def initial_state(self) -> S:
+                return f(dx.initial_state(), dy.initial_state())
+
+            def is_terminal(self, state: SI) -> bool:
+                return dx.is_terminal(state) and dy.is_terminal(state)
+
+        return AnonymousDecider()
