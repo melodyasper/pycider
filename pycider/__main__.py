@@ -11,11 +11,10 @@ from pycider.deciders import (
     Command,
     ComposeDecider,
     Event,
-    Left,
     ManyDecider,
-    Right,
     State,
 )
+from pycider.types import Left, Right
 from pycider.infra import InMemory
 from pycider.procs import (
     CatLight,

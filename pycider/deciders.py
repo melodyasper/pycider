@@ -3,6 +3,7 @@ from collections.abc import Callable, MutableMapping
 from typing import Generic, Sequence, TypeVar
 import dataclasses
 import logging
+from pycider.types import Either, Left, Right
 
 logger = logging.getLogger(__name__)
 
@@ -224,6 +225,55 @@ class Bulb(Decider[Event, Command, State]):
         return isinstance(state, BulbStateBlown)
 
 
+CX = TypeVar("CX")
+EX = TypeVar("EX")
+SX = TypeVar("SX")
+CY = TypeVar("CY")
+EY = TypeVar("EY")
+SY = TypeVar("SY")
+
+
+class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
+    @classmethod
+    def compose(
+        cls, dx: Decider[EX, CX, SX], dy: Decider[EY, CY, SY]
+    ) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
+        class AnonymousDecider(Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]):
+            def decide(
+                self, command: Either[CX, CY], state: tuple[SX, SY]
+            ) -> Sequence[Either[EX, EY]]:
+                match command:
+                    case Left():
+                        return list(
+                            map(lambda v: Left(v), dx.decide(command.value, state[0]))
+                        )
+                    case Right():
+                        return list(
+                            map(lambda v: Right(v), dy.decide(command.value, state[1]))
+                        )
+                    case _:
+                        raise RuntimeError("Type not implemented")
+
+            def evolve(
+                self, state: tuple[SX, SY], event: Left[EX] | Right[EY]
+            ) -> tuple[SX, SY]:
+                match event:
+                    case Left():
+                        return (dx.evolve(state[0], event.value), state[1])
+                    case Right():
+                        return (state[0], dy.evolve(state[1], event.value))
+                    case _:
+                        raise RuntimeError("Type not implemented")
+
+            def initial_state(self) -> tuple[SX, SY]:
+                return (dx.initial_state(), dy.initial_state())
+
+            def is_terminal(self, state: tuple[SX, SY]) -> bool:
+                return dx.is_terminal(state[0]) and dy.is_terminal(state[1])
+
+        return AnonymousDecider()
+
+
 I = TypeVar("I")  # identifier
 
 
@@ -276,75 +326,6 @@ class ManyDecider(
 
     def initial_state(self) -> MutableMapping[I, S]:
         return {}
-
-
-TA = TypeVar("TA")
-TB = TypeVar("TB")
-
-
-class Left(Generic[TA]):
-    __match_args__ = ("value",)
-
-    def __init__(self, value: TA) -> None:
-        self.value = value
-
-
-class Right(Generic[TB]):
-    __match_args__ = ("value",)
-
-    def __init__(self, value: TB) -> None:
-        self.value = value
-
-
-Either = Left[TA] | Right[TB]
-
-CX = TypeVar("CX")
-EX = TypeVar("EX")
-SX = TypeVar("SX")
-CY = TypeVar("CY")
-EY = TypeVar("EY")
-SY = TypeVar("SY")
-
-
-class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
-    @classmethod
-    def compose(
-        cls, dx: Decider[EX, CX, SX], dy: Decider[EY, CY, SY]
-    ) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
-        class AnonymousDecider(Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]):
-            def decide(
-                self, command: Either[CX, CY], state: tuple[SX, SY]
-            ) -> Sequence[Either[EX, EY]]:
-                match command:
-                    case Left():
-                        return list(
-                            map(lambda v: Left(v), dx.decide(command.value, state[0]))
-                        )
-                    case Right():
-                        return list(
-                            map(lambda v: Right(v), dy.decide(command.value, state[1]))
-                        )
-                    case _:
-                        raise RuntimeError("Type not implemented")
-
-            def evolve(
-                self, state: tuple[SX, SY], event: Left[EX] | Right[EY]
-            ) -> tuple[SX, SY]:
-                match event:
-                    case Left():
-                        return (dx.evolve(state[0], event.value), state[1])
-                    case Right():
-                        return (state[0], dy.evolve(state[1], event.value))
-                    case _:
-                        raise RuntimeError("Type not implemented")
-
-            def initial_state(self) -> tuple[SX, SY]:
-                return (dx.initial_state(), dy.initial_state())
-
-            def is_terminal(self, state: tuple[SX, SY]) -> bool:
-                return dx.is_terminal(state[0]) and dy.is_terminal(state[1])
-
-        return AnonymousDecider()
 
 
 EO = TypeVar("EO")
