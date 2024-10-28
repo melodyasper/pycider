@@ -77,7 +77,9 @@ EO = TypeVar("EO")
 CO = TypeVar("CO")
 
 
-class Process(Generic[EI, CI, S, EO, CO]):
+class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
+    """Adapt process Commands / Events into new output Commands and Events."""
+
     @classmethod
     def adapt(
         cls,
@@ -85,7 +87,17 @@ class Process(Generic[EI, CI, S, EO, CO]):
         convert_command: Callable[[CO], CI],
         p: IProcess[EO, CO, S],
     ) -> IProcess[EI, CI, S]:
-        class AnonymousProcess(IProcess[EI, CI, S]):
+        """Convert Commands/Events into output variants.
+
+        Parameters:
+            select_event: A callaback that converts input Events to output Events.
+            convert_command: A callback that converts input Commands to output Commands.
+
+        Returns:
+            A new Process that can given input Events/Commands return new output variants.
+        """
+
+        class InternalProcess(IProcess[EI, CI, S]):
             def evolve(self, state: S, event: EI) -> S:
                 new_event = select_event(event)
                 if new_event is None:
@@ -107,7 +119,7 @@ class Process(Generic[EI, CI, S, EO, CO]):
             def is_terminal(self, state: S) -> bool:
                 return p.is_terminal(state)
 
-        return AnonymousProcess()
+        return InternalProcess()
 
 
 def process_collect_fold(
@@ -131,13 +143,23 @@ DS = TypeVar("DS")
 
 
 class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
+    """Combine a Processor with a Decider together."""
 
     @classmethod
     def combine(
         cls, proc: IProcess[E, C, PS], decider: Decider[E, C, DS]
     ) -> Decider[E, C, tuple[DS, PS]]:
+        """Combine a Process and a Decider into a single Decider.
 
-        class AnonymousDecider(Decider[E, C, tuple[DS, PS]]):
+        Parameters:
+            proc: The process being combined.
+            decider: The decider its being combined with.
+
+        Results:
+            A single Decider.
+        """
+
+        class InternalDecider(Decider[E, C, tuple[DS, PS]]):
             def decide(self, command: C, state: tuple[DS, PS]) -> Sequence[E]:
                 def loop(commands: list[C], all_events: list[E]):
                     if len(commands) == 0:
@@ -162,4 +184,4 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
             def is_terminal(self, state: tuple[DS, PS]) -> bool:
                 return decider.is_terminal(state[0]) and proc.is_terminal(state[1])
 
-        return AnonymousDecider()
+        return InternalDecider()

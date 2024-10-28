@@ -19,4 +19,12 @@ You can create `Process` or a `Decider`. A simple example of this can be found u
 
 ## Process
 
-TODO
+`Process` is a simple state machine for managing a system. A system has several needs. The system given a `State` should be able to resume to the next `Command`, The system should be able to react to `Event` changes and return `Command`'s for dealing with those changes. Finally the system should be able to update the `State` deterministically given a `Event`. 
+
+* `Event`'s are turned into `Command`s thrugh `react()` calls.
+* Given a `State`, the system should be able to `resume()` to the appropriate `Command`.
+* `Event`'s deterministically update the `State` through `evolve()` calls.
+
+## Example: How do Process and Decider work together
+
+A `Process` all about reacting to events and coordinating between `Decider`'s. 

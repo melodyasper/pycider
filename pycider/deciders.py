@@ -77,11 +77,22 @@ SY = TypeVar("SY")
 
 
 class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
+    """Combine two deciders into a single decider."""
+
     @classmethod
     def compose(
         cls, dx: Decider[EX, CX, SX], dy: Decider[EY, CY, SY]
     ) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
-        class AnonymousDecider(Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]):
+        """Given two deciders return a single one.
+
+        Parameters:
+            dx: Decider for the Left side of the combined decider
+            dy: Decider for the Right side of the combined decider
+
+        Returns:
+            A single decider made of two deciders."""
+
+        class InternalDecider(Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]):
             def decide(
                 self, command: Either[CX, CY], state: tuple[SX, SY]
             ) -> Sequence[Either[EX, EY]]:
@@ -114,13 +125,21 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
             def is_terminal(self, state: tuple[SX, SY]) -> bool:
                 return dx.is_terminal(state[0]) and dy.is_terminal(state[1])
 
-        return AnonymousDecider()
+        return InternalDecider()
 
 
 class NeutralDecider:
+    """For demonostration purposes."""
+
     @classmethod
     def neutral(cls):
-        class AnonymousDecider(Decider[None, None, tuple[()]]):
+        """Returns a demonstration neutral decider.
+
+        Returns:
+            A decider which is always terminal and returns nothing.
+        """
+
+        class InternalDecider(Decider[None, None, tuple[()]]):
             def decide(self, command: None, state: tuple[()]) -> Sequence[None]:
                 return []
 
@@ -133,7 +152,7 @@ class NeutralDecider:
             def is_terminal(self, state: tuple[()]) -> bool:
                 return True
 
-        return AnonymousDecider()
+        return InternalDecider()
 
 
 I = TypeVar("I")  # identifier
@@ -142,7 +161,14 @@ I = TypeVar("I")  # identifier
 class ManyDecider(
     Decider[tuple[I, E], tuple[I, C], MutableMapping[I, S]], Generic[I, E, C, S]
 ):
+    """Manage many instances of the same Decider using a Identifier."""
+
     def __init__(self, aggregate: type[Decider[E, C, S]]) -> None:
+        """Initialize the ManyDecider class.
+
+        Parameters:
+            aggregate: The type of aggregate we are holding multiples of.
+        """
         super().__init__()
         self.aggregate = aggregate
 
@@ -206,7 +232,7 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
         fsi: Callable[[S], SO],
         decider: Decider[EO, CO, SO],
     ) -> BaseDecider[E, C, S, SO]:
-        class AnonymousDecider(BaseDecider[E, C, S, SO]):
+        class InternalDecider(BaseDecider[E, C, S, SO]):
             def decide(self, command: C, state: S) -> Sequence[E]:
                 new_command = fci(command)
                 if new_command is None:
@@ -225,7 +251,7 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
             def is_terminal(self, state: S) -> bool:
                 return decider.is_terminal(fsi(state))
 
-        return AnonymousDecider()
+        return InternalDecider()
 
 
 SA = TypeVar("SA")
@@ -237,7 +263,7 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
     def map(
         f: Callable[[SA], SB], d: BaseDecider[E, C, SI, SA]
     ) -> BaseDecider[E, C, SI, SB]:
-        class AnonymousDecider(BaseDecider[E, C, SI, SB]):
+        class InternalDecider(BaseDecider[E, C, SI, SB]):
             def decide(self, command: C, state: SI) -> Sequence[E]:
                 return d.decide(command, state)
 
@@ -250,7 +276,7 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
             def is_terminal(self, state: SI) -> bool:
                 return d.is_terminal(state)
 
-        return AnonymousDecider()
+        return InternalDecider()
 
 
 class Map2Decider(Generic[E, C, S, SX, SY, SI]):
@@ -261,7 +287,7 @@ class Map2Decider(Generic[E, C, S, SX, SY, SI]):
         dx: BaseDecider[E, C, SI, SX],
         dy: BaseDecider[E, C, SI, SY],
     ) -> BaseDecider[E, C, SI, S]:
-        class AnonymousDecider(BaseDecider[E, C, SI, S]):
+        class InternalDecider(BaseDecider[E, C, SI, S]):
             def decide(self, command: C, state: SI) -> Sequence[E]:
                 events: list[E] = []
                 events.extend(dx.decide(command, state))
@@ -279,7 +305,7 @@ class Map2Decider(Generic[E, C, S, SX, SY, SI]):
             def is_terminal(self, state: SI) -> bool:
                 return dx.is_terminal(state) and dy.is_terminal(state)
 
-        return AnonymousDecider()
+        return InternalDecider()
 
 
 def decider_apply(
