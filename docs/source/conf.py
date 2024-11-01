@@ -17,6 +17,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
+    'sphinx.ext.inheritance_diagram',
 ]
 
 intersphinx_mapping = {
@@ -33,6 +34,3 @@ html_theme = "sphinx_rtd_theme"
 
 # -- Options for EPUB output
 epub_show_urls = "footnote"
-
-autosummary_generate = True
-

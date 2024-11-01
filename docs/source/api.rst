@@ -1,11 +1,8 @@
-API
-===
+API Documentation
+=================
 
-.. automodule:: pycider
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules
 
-.. autosummary:: pycider
-   :toctree: generated
-   :recursive:
+   pycider
