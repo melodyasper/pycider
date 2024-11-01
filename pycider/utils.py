@@ -8,15 +8,38 @@ S = TypeVar("S")
 
 
 class InMemory(Generic[E, C, S]):
-    def __init__(self, decider: Decider[E, C, S]) -> None:
-        self.decider = decider
-        self.state: S = self.decider.initial_state()
+    """Runs a decider in memory, performing decide and evolving the state."""
 
-    def command(self, command: C):
-        events = self.decider.decide(command, self.state)
+    def __init__(self, decider: Decider[E, C, S]) -> None:
+        """Setup an in-memory executor for a decider.
+
+        Parameters:
+            decider: The decider to be stored internally.
+        """
+        self._decider = decider
+        self.state: S = self._decider.initial_state()  #: State of the decider
+
+    def command(self, command: C) -> Sequence[E]:
+        """Decide over a command and evolves the internal state.
+
+        Parameters:
+            command: Command to decide over
+
+        Returns:
+            The events that were evolved over resulting from decide
+        """
+        events = self._decider.decide(command, self.state)
         for event in events:
-            self.state = self.decider.evolve(self.state, event)
+            self.state = self._decider.evolve(self.state, event)
         return events
 
     def __call__(self, command: C) -> Sequence[E]:
+        """Decide over a command and evolves the internal state.
+
+        Parameters:
+            command: Command to decide over
+
+        Returns:
+            The events that were evolved over resulting from decide
+        """
         return self.command(command)

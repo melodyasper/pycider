@@ -5,17 +5,31 @@ TB = TypeVar("TB")
 
 
 class Left(Generic[TA]):
+    """Left-hand side container that holds a value."""
+
     __match_args__ = ("value",)
 
     def __init__(self, value: TA) -> None:
-        self.value = value
+        """Create a Left-hand side container with a value.
+
+        Parameters:
+            value: The value to be held by this method
+        """
+        self.value = value  #: The stored value.
 
 
 class Right(Generic[TB]):
+    """Right-hand side container that holds a value."""
+
     __match_args__ = ("value",)
 
     def __init__(self, value: TB) -> None:
-        self.value = value
+        """Create a Right-hand side container with a value.
+
+        Parameters:
+            value: The value to be held by this method
+        """
+        self.value = value  #: The stored value.
 
 
-Either = Left[TA] | Right[TB]
+Either = Left[TA] | Right[TB]  #: Combined type representing Left or Right.
