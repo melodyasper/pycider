@@ -1,7 +1,5 @@
 API
 ===
 
-.. autosummary::
-   :toctree: generated
-
-   pycider
+.. automodule:: pycider
+   :members:

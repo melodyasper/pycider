@@ -222,7 +222,7 @@ class Bulb(Decider[Event, Command, State]):
 
 def test_cat_and_bulb() -> None:
 
-    cnb = InMemory(ComposeDecider.compose(Cat(), Bulb()))
+    cnb = InMemory(ComposeDecider.build(Cat(), Bulb()))
 
     cnb(Left(CatCommandWakeUp()))
     cnb(Left(CatCommandGetToSleep()))
@@ -255,7 +255,7 @@ def test_in_memory_many_cats() -> None:
 
 
 def test_compose_process() -> None:
-    cat_and_bulb = ComposeDecider.compose(Cat(), Bulb())
+    cat_and_bulb = ComposeDecider.build(Cat(), Bulb())
 
     def select_event(event):
         match event:

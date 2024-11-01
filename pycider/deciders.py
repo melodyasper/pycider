@@ -80,7 +80,7 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
     """Combine two deciders into a single decider."""
 
     @classmethod
-    def compose(
+    def build(
         cls, dx: Decider[EX, CX, SX], dy: Decider[EY, CY, SY]
     ) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
         """Given two deciders return a single one.
@@ -132,7 +132,7 @@ class NeutralDecider:
     """For demonostration purposes."""
 
     @classmethod
-    def neutral(cls):
+    def build(cls):
         """Returns a demonstration neutral decider.
 
         Returns:
@@ -224,7 +224,7 @@ FSI = TypeVar("FSI")
 
 class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
     @classmethod
-    def adapt(
+    def build(
         cls,
         fci: Callable[[C], CO | None],
         fei: Callable[[E], EO | None],
@@ -260,7 +260,7 @@ SB = TypeVar("SB")
 
 class MapDecider(Generic[E, C, SI, SA, SB]):
     @classmethod
-    def map(
+    def build(
         f: Callable[[SA], SB], d: BaseDecider[E, C, SI, SA]
     ) -> BaseDecider[E, C, SI, SB]:
         class InternalDecider(BaseDecider[E, C, SI, SB]):
@@ -281,7 +281,7 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
 
 class Map2Decider(Generic[E, C, S, SX, SY, SI]):
     @classmethod
-    def map(
+    def build(
         cls,
         f: Callable[[SX, SY], S],
         dx: BaseDecider[E, C, SI, SX],
@@ -308,7 +308,7 @@ class Map2Decider(Generic[E, C, S, SX, SY, SI]):
         return InternalDecider()
 
 
-def decider_apply(
+def apply(
     f: BaseDecider[E, C, SI, Callable[[SX], SO]], d: BaseDecider[E, C, SI, SX]
 ) -> BaseDecider[E, C, SI, SO]:
-    return Map2Decider.map(lambda f, x: f(x), f, d)
+    return Map2Decider.build(lambda f, x: f(x), f, d)
