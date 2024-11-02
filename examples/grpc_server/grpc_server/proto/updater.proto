@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package updater;
+
+service UpdaterService {
+  // Lists all available updates as a list of version strings
+  rpc ListAvailableUpdates (ListAvailableUpdatesRequest) returns (ListAvailableUpdatesResponse);
+
+  // Requests a specific update by version string
+  rpc RequestUpdate (RequestUpdateRequest) returns (RequestUpdateResponse);
+}
+
+// Request message for listing all available updates
+message ListAvailableUpdatesRequest {
+  string client_id = 1;  // Unique identifier for the client
+}
+
+// Response message for listing all available updates
+message ListAvailableUpdatesResponse {
+  repeated string versions = 1;  // List of version strings for available updates
+}
+
+// Request message for requesting a specific update
+message RequestUpdateRequest {
+  string client_id = 1;  // Unique identifier for the client
+  string version = 2;    // Version string of the requested update
+}
+
+// Response message for requesting a specific update
+message RequestUpdateResponse {
+  bytes data = 1;             // Blob of data for the update
+  string version = 2;         // Version of the downloaded update
+  int32 error_code = 3;       // Error code, if the version doesn't exist
+  string error_message = 4;   // Description of the error, if any
+}
