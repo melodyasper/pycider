@@ -16,10 +16,10 @@ SO = TypeVar("SO")
 
 
 class BaseDecider(ABC, Generic[E, C, SI, SO]):
-    """This the is BaseDecider allowing for a flexible input and output state.
+    """This decider allows for a different input and output state type.
 
-    BaseDecider is the right choice only when State needs aren't able to be
-    expressed through the regular Decider.
+    BaseDecider should only be used when the input and output state type
+    should be different. Otherwise use Decider.
     """
 
     @abstractmethod
@@ -253,7 +253,7 @@ FSI = TypeVar("FSI")
 
 
 class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
-    """Adapter a decider from one set of events/commands/state to another.
+    """A decider that translates from one set of events/commands/states to another.
 
     The AdaptDecider takes in a decider and makes a translation layer
     between the commands, events, and state internally and a new
