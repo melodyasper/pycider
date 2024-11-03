@@ -1,12 +1,12 @@
 from concurrent import futures
 
 import grpc
-from pycider.utils import InMemory
-
 from grpc_server.aggregate import UpdateAggregate
 from grpc_server.proto import updater_pb2, updater_pb2_grpc
 from grpc_server.types import UpdateCommand as C
 from grpc_server.types import UpdateState as S
+
+from pycider.utils import InMemory
 
 
 class UpdateServicer(updater_pb2_grpc.UpdaterServiceServicer):

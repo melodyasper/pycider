@@ -1,10 +1,10 @@
 from typing import Sequence
 
-from pycider.deciders import Decider
-
 from grpc_server.types import UpdateCommand as C
 from grpc_server.types import UpdateEvent as E
 from grpc_server.types import UpdateState as S
+
+from pycider.deciders import Decider
 
 VERSION_LIST_TO_DATA: dict[str, bytes] = {
     "0.10.41": b"download_data",

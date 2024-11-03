@@ -1,18 +1,11 @@
-from abc import ABC
 import dataclasses
+from abc import ABC
 from typing import Sequence, cast
-from pycider.deciders import (
-    ComposeDecider,
-    Decider,
-    ManyDecider,
-)
-from pycider.utils import InMemory
-from pycider.processes import (
-    IProcess,
-    ProcessAdapt,
-    ProcessCombineWithDecider,
-)
+
+from pycider.deciders import ComposeDecider, Decider, ManyDecider
+from pycider.processes import IProcess, ProcessAdapt, ProcessCombineWithDecider
 from pycider.types import Left, Right
+from pycider.utils import InMemory
 
 
 class State(ABC):

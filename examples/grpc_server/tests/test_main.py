@@ -1,11 +1,11 @@
+import threading
+import time
 import uuid
 
 import grpc
-import threading
 from grpc_server.aggregate import VERSION_LIST_TO_DATA
 from grpc_server.proto import updater_pb2, updater_pb2_grpc
 from grpc_server.server import serve
-import time
 
 
 def test_update_server():
