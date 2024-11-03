@@ -11,9 +11,10 @@ S = TypeVar("S")
 
 class IProcess(ABC, Generic[E, C, S]):
     """Prototype for Process implementations.
-    
+
     All Processes should be implemented using this prototype.
     """
+
     @abstractmethod
     def evolve(self, state: S, event: E) -> S:
         """Returns an updated state based on the current event.

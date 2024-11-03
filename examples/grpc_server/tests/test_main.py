@@ -1,12 +1,18 @@
 import uuid
 
 import grpc
-
+import threading
 from grpc_server.aggregate import VERSION_LIST_TO_DATA
 from grpc_server.proto import updater_pb2, updater_pb2_grpc
+from grpc_server.server import serve
+import time
 
 
 def test_update_server():
+    server_thread = threading.Thread(target=serve, daemon=True)
+    server_thread.start()
+    time.sleep(2)
+
     client_id = uuid.uuid4().hex
     channel = grpc.insecure_channel("localhost:50051")
     stub = updater_pb2_grpc.UpdaterServiceStub(channel)

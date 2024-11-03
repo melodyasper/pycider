@@ -27,6 +27,3 @@ You can create `Process` or a `Decider`. A simple example of this can be found u
 * Given a `State`, the system should be able to `resume()` to the appropriate `Command`.
 * `Event`'s deterministically update the `State` through `evolve()` calls.
 
-## Example: How do Process and Decider work together
-
-A `Process` all about reacting to events and coordinating between `Decider`'s. 
