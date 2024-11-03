@@ -16,6 +16,12 @@ SO = TypeVar("SO")
 
 
 class BaseDecider(ABC, Generic[E, C, SI, SO]):
+    """This the is BaseDecider allowing for a flexible input and output state.
+
+    BaseDecider is the right choice only when State needs aren't able to be
+    expressed through the regular Decider.
+    """
+
     @abstractmethod
     def initial_state(self) -> SO:
         """Starting state for a decider.
@@ -65,6 +71,12 @@ class BaseDecider(ABC, Generic[E, C, SI, SO]):
 
 
 class Decider(BaseDecider[E, C, S, S], Generic[E, C, S]):
+    """This is a BaseDecider where the input and output state are the same.
+
+    This is the Decider that should preferably be used unless you explcitly
+    need control over a different input and output type for the state.
+    """
+
     pass
 
 
@@ -77,7 +89,16 @@ SY = TypeVar("SY")
 
 
 class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
-    """Combine two deciders into a single decider."""
+    """Combine two deciders into a single decider.
+
+    This creates a Decider that is combined into a Left and Right
+    side. There is a type for Left or Right in `pycider.types`.
+    To execute commands after composing two targets you need
+    to pass in commands in the following shape:
+
+    `Left(C)` or `Right(C)` where C is the command to be executed.
+    This code will make sure the proper decider receives the command.
+    """
 
     @classmethod
     def build(
@@ -161,10 +182,19 @@ I = TypeVar("I")  # identifier
 class ManyDecider(
     Decider[tuple[I, E], tuple[I, C], MutableMapping[I, S]], Generic[I, E, C, S]
 ):
-    """Manage many instances of the same Decider using a Identifier."""
+    """Manage many instances of the same Decider using a Identifier.
+
+    This Decider is useful if you have multiple of the same Decider that
+    can be differentiated by a unique element. For example a list of
+    transaction Deciders which all have a unique transaction key, or a
+    list of clients that all have a unique client id. Using this you
+    can execute commands by executing with a many decider commands in
+    a tuple of (I, C) where I is the unique identifier and C is the
+    desired command to be executed.
+    """
 
     def __init__(self, aggregate: type[Decider[E, C, S]]) -> None:
-        """Initialize the ManyDecider class.
+        """Create an instance of ManyDecider.
 
         Parameters:
             aggregate: The type of aggregate we are holding multiples of.
@@ -223,6 +253,15 @@ FSI = TypeVar("FSI")
 
 
 class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
+    """Adapter a decider from one set of events/commands/state to another.
+
+    The AdaptDecider takes in a decider and makes a translation layer
+    between the commands, events, and state internally and a new
+    resulting type of command, event, and map. The purpose of this is
+    to allow a Decider of one type to interact with a Decider of
+    another type through translation.
+    """
+
     @classmethod
     def build(
         cls,
@@ -232,6 +271,22 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
         fsi: Callable[[S], SO],
         decider: Decider[EO, CO, SO],
     ) -> BaseDecider[E, C, S, SO]:
+        """Create an adapted decider.
+
+        Parameters:
+            fci: A callable function that takes a Command as input and
+                returns an output command of a different type.
+            fei: A callable function that takes an Event as an input and
+                returns an output event of a different type.
+            feo: A callable function that takes an output event type and
+                translates it back into an internal event type.
+            fsi: A callable function takes a state and translates it to
+                a target output  state of a different type.
+
+        Returns:
+            A Decider with its functions wrapped by translation functions.
+        """
+
         class InternalDecider(BaseDecider[E, C, S, SO]):
             def decide(self, command: C, state: S) -> Sequence[E]:
                 new_command = fci(command)
@@ -259,10 +314,23 @@ SB = TypeVar("SB")
 
 
 class MapDecider(Generic[E, C, SI, SA, SB]):
+    """Map allows the translation of a Decider's state into a different state."""
+
     @classmethod
     def build(
         f: Callable[[SA], SB], d: BaseDecider[E, C, SI, SA]
     ) -> BaseDecider[E, C, SI, SB]:
+        """Build a whose state is represented as the function `f(state)`.
+
+        Parameters:
+            f: A function to transform the state.
+            d: The Decider we are using.
+
+        Returns:
+            A new Decider where `evolve` and `initial_state` both
+            return `f(state_operation)`.
+        """
+
         class InternalDecider(BaseDecider[E, C, SI, SB]):
             def decide(self, command: C, state: SI) -> Sequence[E]:
                 return d.decide(command, state)
