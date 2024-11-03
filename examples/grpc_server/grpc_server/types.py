@@ -20,7 +20,7 @@ class UpdateState:
         version: str
 
     @dataclass
-    class DownloadUnavailble(Base):
+    class DownloadUnavailable(Base):
         error_code: int
         error_message: str
 

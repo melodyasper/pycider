@@ -30,7 +30,7 @@ class UpdateAggregate(Decider[E.Base, C.Base, S.Base]):
                 return True
             case S.DownloadReady():
                 return True
-            case S.DownloadUnavailble():
+            case S.DownloadUnavailable():
                 return True
             case _:
                 return False
@@ -46,7 +46,7 @@ class UpdateAggregate(Decider[E.Base, C.Base, S.Base]):
                 )
 
             case S.NewConnection(), E.RequestedDownloadInvalid():
-                return S.DownloadUnavailble(
+                return S.DownloadUnavailable(
                     error_code=-1,
                     error_message=f"Version {event.version} does not exist.",
                 )

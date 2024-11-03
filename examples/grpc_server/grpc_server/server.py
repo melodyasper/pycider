@@ -38,7 +38,7 @@ class UpdateServicer(updater_pb2_grpc.UpdaterServiceServicer):
                 return updater_pb2.RequestUpdateResponse(
                     version=state.version, data=state.data
                 )
-            case S.DownloadUnavailble():
+            case S.DownloadUnavailable():
                 return updater_pb2.RequestUpdateResponse(
                     error_code=state.error_code, error_message=state.error_message
                 )
