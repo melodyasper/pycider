@@ -1,33 +1,27 @@
-name: CI
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
+      - uses: actions/checkout@v4
+      - name: Install Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
-
-      - name: Install Poetry
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup a local virtual environment
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          export PATH="$HOME/.local/bin:$PATH"
-        shell: bash
-
-      - name: Install dependencies
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - uses: actions/cache@v3
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install project dependencies
         run: poetry install
-
-      - name: Run tests
-        run: poetry run pytest
-
+      - name: Install grpc server dependencies
+        working-directory: ./examples/grpc_server
+        run: poetry install
+      - name: Run automated tests
+        run: poetry run pytest -v
