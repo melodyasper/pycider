@@ -189,14 +189,14 @@ class ManyDecider(
     desired command to be executed.
     """
 
-    def __init__(self, aggregate: type[Decider[E, C, S]]) -> None:
+    def __init__(self, decider: type[Decider[E, C, S]]) -> None:
         """Create an instance of ManyDecider.
 
         Parameters:
-            aggregate: The type of aggregate we are holding multiples of.
+            decider: The type of decider we are holding multiples of.
         """
         super().__init__()
-        self.aggregate = aggregate
+        self.decider = decider
 
     def evolve(
         self, state: MutableMapping[I, S], event: tuple[I, E]
@@ -207,9 +207,9 @@ class ManyDecider(
 
         current_state = state.get(identifier)
         if current_state is None:
-            current_state = self.aggregate().initial_state()
+            current_state = self.decider().initial_state()
 
-        current_state = self.aggregate().evolve(current_state, current_event)
+        current_state = self.decider().evolve(current_state, current_event)
         state[identifier] = current_state
 
         return state
@@ -222,19 +222,19 @@ class ManyDecider(
 
         current_state = state.get(identifier)
         if current_state is None:
-            current_state = self.aggregate().initial_state()
+            current_state = self.decider().initial_state()
 
         events = list(
             map(
                 lambda event: (identifier, event),
-                self.aggregate().decide(current_command, current_state),
+                self.decider().decide(current_command, current_state),
             )
         )
         return events
 
     def is_terminal(self, state: MutableMapping[I, S]) -> bool:
         for member_state in state.values():
-            if not self.aggregate().is_terminal(member_state):
+            if not self.decider().is_terminal(member_state):
                 return False
         return True
 

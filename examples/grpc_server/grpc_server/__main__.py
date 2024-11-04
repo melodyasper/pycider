@@ -1,4 +1,4 @@
-from grpc_server.server import serve
+from grpc_server import server
 
 if __name__ == "__main__":
-    serve()
+    server.serve()
