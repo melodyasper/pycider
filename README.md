@@ -1,6 +1,6 @@
 # Pycider
 
-[![Documentation Status](https://readthedocs.org/projects/pycider/badge/?version=latest)](https://pycider.readthedocs.io/en/latest/?badge=latest)![Test Status](https://github.com/<username>/<repository>/actions/workflows/ci.yml/badge.svg)
+[![Documentation Status](https://readthedocs.org/projects/pycider/badge/?version=latest)](https://pycider.readthedocs.io/en/latest/?badge=latest)![Test Status](https://github.com/melodyasper/pycider/actions/workflows/ci.yml/badge.svg)
 
 
 [Documentation is here](http://pycider.readthedocs.io/). This code is a Python implementation of deciders based on the F# code from [Jérémie Chassaing](https://github.com/thinkbeforecoding/) located here [dddeu-2023-deciders](https://github.com/thinkbeforecoding/dddeu-2023-deciders). There was additionally a talk on this, to be found [here](https://www.youtube.com/watch?v=72TOhMpEVlA).
