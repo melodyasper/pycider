@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "sudoku-solver"
+version = "0.1.0"
+description = ""
+authors = ["Melody Asper <melodyaheath@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pycider = {path = "../.."}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
