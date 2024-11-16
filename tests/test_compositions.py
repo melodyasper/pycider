@@ -266,8 +266,8 @@ def test_compose_process() -> None:
             case _:
                 raise RuntimeError("Improper state")
 
-    adapted_process = ProcessAdapt.adapt(select_event, command_converter, CatLight())
-    cat_bulb = ProcessCombineWithDecider.combine(adapted_process, cat_and_bulb)
+    adapted_process = ProcessAdapt.build(select_event, command_converter, CatLight())
+    cat_bulb = ProcessCombineWithDecider.build(adapted_process, cat_and_bulb)
     cat_b = InMemory(cat_bulb)
     cat_b(Right(BulbCommandFit(max_uses=5)))
     cat_b(Left(CatCommandGetToSleep()))

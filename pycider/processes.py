@@ -85,7 +85,7 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
     """Adapt process Commands / Events into new output Commands and Events."""
 
     @classmethod
-    def adapt(
+    def build(
         cls,
         select_event: Callable[[EI], EO | None],
         convert_command: Callable[[CO], CI],
@@ -150,7 +150,7 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
     """Combine a Processor with a Decider together."""
 
     @classmethod
-    def combine(
+    def build(
         cls, proc: IProcess[E, C, PS], decider: Decider[E, C, DS]
     ) -> Decider[E, C, tuple[DS, PS]]:
         """Combine a Process and a Decider into a single Decider.

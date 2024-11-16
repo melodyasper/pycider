@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pycider"
-version = "0.7.12"
+version = "0.8.12"
 description = "Aggregates composition for domain driven design in Python"
 authors = ["Melody Asper <melodyaheath@gmail.com>"]
 readme = "README.md"
