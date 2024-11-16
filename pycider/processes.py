@@ -165,6 +165,7 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
         Note: This function's generated `decide` function deviates from the model used by the original material. `decide` in this code takes a command and state tuple.
 
         For each command issued this code will do the following:
+
         #. create a command list `commands` initialized as [commands]
         #. create a event list `events` initialized as []
         #. run `decider.decide` on a popped entry from commands
