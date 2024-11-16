@@ -161,23 +161,44 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
 
         Results:
             A single Decider.
+
+        Note: This function's generated `decide` function deviates from the model used by the original material. `decide` in this code takes a command and state tuple.
+
+        For each command issued this code will do the following:
+        1. create a command list `commands` initialized as [commands]
+        2. create a event list `events` initialized as []
+        2. run `decider.decide` on a popped entry from commands
+        2. append the results to events array
+        3. create a copy of state and run `decider.evolve` on it
+        4. run `process.react` to generate new commands appended to the commands list.
+        3. run `process.evolve` on each new event.
+        4. loop back to 2 with remaining commands and the copy of decider's state.
+        4. one commands is empty, return all events collected during the above.
+
+        The state of neither process nor decider is actually changed by `decide`. You will still need to call `evolve` to reach the final end states.
         """
 
         class InternalDecider(Decider[E, C, tuple[DS, PS]]):
             def decide(self, command: C, state: tuple[DS, PS]) -> Sequence[E]:
-                def loop(commands: list[C], all_events: list[E]):
+                # NOTE: This is a deviation.
+                decider_state = state[0]
+
+                def loop(decider_state: DS, commands: list[C], all_events: list[E]):
                     if len(commands) == 0:
                         return all_events
                     command = commands.pop(0)
-                    new_events = list(decider.decide(command, state[0]))
+                    new_events = list(decider.decide(command, decider_state))
+                    # NOTE: This is a deviation.
+                    for event in new_events:
+                        decider_state = decider.evolve(decider_state, event)
                     new_commands = process_collect_fold(
                         proc, state[1], new_events.copy()
                     )
                     commands.extend(new_commands)
                     all_events.extend(new_events)
-                    return loop(commands, all_events)
+                    return loop(decider_state, commands, all_events)
 
-                return loop([command], [])
+                return loop(decider_state, [command], [])
 
             def evolve(self, state: tuple[DS, PS], event: E) -> tuple[DS, PS]:
                 return (decider.evolve(state[0], event), proc.evolve(state[1], event))
