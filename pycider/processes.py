@@ -184,7 +184,8 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                 # NOTE: This is a deviation.
                 decider_state = state[0]
 
-                def loop(decider_state: DS, commands: list[C], all_events: list[E]):
+                def loop(commands: list[C], all_events: list[E]):
+                    nonlocal decider_state
                     if len(commands) == 0:
                         return all_events
                     command = commands.pop(0)
@@ -197,9 +198,9 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                     )
                     commands.extend(new_commands)
                     all_events.extend(new_events)
-                    return loop(decider_state, commands, all_events)
+                    return loop(commands, all_events)
 
-                return loop(decider_state, [command], [])
+                return loop([command], [])
 
             def evolve(self, state: tuple[DS, PS], event: E) -> tuple[DS, PS]:
                 return (decider.evolve(state[0], event), proc.evolve(state[1], event))
