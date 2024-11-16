@@ -165,15 +165,15 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
         Note: This function's generated `decide` function deviates from the model used by the original material. `decide` in this code takes a command and state tuple.
 
         For each command issued this code will do the following:
-        1. create a command list `commands` initialized as [commands]
-        2. create a event list `events` initialized as []
-        2. run `decider.decide` on a popped entry from commands
-        2. append the results to events array
-        3. create a copy of state and run `decider.evolve` on it
-        4. run `process.react` to generate new commands appended to the commands list.
-        3. run `process.evolve` on each new event.
-        4. loop back to 2 with remaining commands and the copy of decider's state.
-        4. one commands is empty, return all events collected during the above.
+        #. create a command list `commands` initialized as [commands]
+        #. create a event list `events` initialized as []
+        #. run `decider.decide` on a popped entry from commands
+        #. append the results to events array
+        #. create a copy of state and run `decider.evolve` on it
+        #. run `process.react` to generate new commands appended to the commands list.
+        #. run `process.evolve` on each new event.
+        #. loop back to 2 with remaining commands and the copy of decider's state.
+        #. one commands is empty, return all events collected during the above.
 
         The state of neither process nor decider is actually changed by `decide`. You will still need to call `evolve` to reach the final end states.
         """
