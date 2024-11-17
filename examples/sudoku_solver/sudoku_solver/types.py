@@ -84,6 +84,11 @@ class Event:
         board: SudokuBoard
 
     @dataclass
+    class BoardInitialized(Base):
+        """Initialized"""
+        board: SudokuBoard
+
+    @dataclass
     class SolutionFailed(Base):
         """The solver was unable to solve the board."""
 

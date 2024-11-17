@@ -12,7 +12,7 @@ class SudokuProcess(processes.IProcess[E.Base, C.Base, S.Base]):
         match event, state:
 
             # Event: StepCompleted -> Generate the next step command
-            case E.StepCompleted(), _:
+            case E.StepCompleted() | E.BoardInitialized(), _:
                 return [C.CheckCompletion()]
 
             # Event: BoardValidated -> Start solving if the board is valid

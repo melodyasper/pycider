@@ -17,17 +17,10 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
         return isinstance(state, S.Unsolvable) or isinstance(state, S.Solved)
 
     def decide(self, command: C.Base, state: S.Base) -> Sequence[E.Base]:
-        # print(state)
         match command, state:
             case C.InitializeSolver(grid=grid), S.Initial():
                 board = SudokuBoard(values=grid)
-                if not SudokuEvaluator.is_board_valid(board):
-                    return [E.SolutionFailed(board=board)]
-
-                if SudokuEvaluator.is_board_complete(board):
-                    return [E.SolutionFound(board=board)]
-
-                return [E.BoardValidated(board=board)]
+                return [E.BoardInitialized(board=board)]
 
             case C.RunSolverStep(), S.Valid(board=board) | S.Solving(board=board):
                 step = SudokuEvaluator.find_next_single_step(board)
@@ -50,12 +43,15 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                 return [E.BoardNotYetComplete(board)]
 
             case _:
-                return [E.ErrorDetected(message="Unhandled: {comman=} with {state=}.")]
+                return [
+                    E.ErrorDetected(message=f"Unhandled: {command=} with {state=}.")
+                ]
 
     def evolve(self, state: S.Base, event: E.Base) -> S.Base:
         match event, state:
+            case E.BoardInitialized(board=board), S.Initial():
+                return S.Solving(board=board)
 
-            # Event: StepCompleted -> Move to Solving state
             case E.StepCompleted(idx=idx, value=value), S.Solving(
                 board=board
             ) | S.Valid(board=board):
@@ -64,19 +60,15 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                 new_board = SudokuBoard(values=values)
                 return S.Solving(board=new_board)
 
-            # Event: BoardValidated -> Move to Valid state
             case E.BoardValidated(board=new_board), (S.Initial() | S.Solving()):
                 return S.Valid(board=new_board)
 
-            # Event: SolutionFound -> Move to Solved state
             case E.SolutionFound(board=new_board), (S.Valid() | S.Solving()):
                 return S.Solved(board=new_board)
 
-            # Event: SolutionFailed -> Move to Unsolvable state
             case E.SolutionFailed(board=new_board), (S.Solving() | S.Valid()):
                 return S.Unsolvable(board=new_board)
 
-            # Event: ErrorDetected -> Move to Error state
             case E.ErrorDetected(message=msg), _:
                 return S.Error(message=msg)
 
