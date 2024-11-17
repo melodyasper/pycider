@@ -3,136 +3,139 @@ from dataclasses import dataclass
 from sudoku_solver.sudoku.model import SudokuBoard
 
 
-# States
 class State:
-    @dataclass
+    @dataclass(frozen=True)
     class Base:
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class Initial(Base):
         """The solver is initialized with the provided board."""
 
         pass
 
-    @dataclass
-    class Solving(Base):
+    @dataclass(frozen=True)
+    class InitializedBase(Base):
+        """The solver is now inialized."""
+
+        board: SudokuBoard
+
+    @dataclass(frozen=True)
+    class Solving(InitializedBase):
         """The solver is actively processing and attempting to solve the board."""
 
-        board: SudokuBoard
+        pass
 
-    @dataclass
-    class Valid(Base):
+    @dataclass(frozen=True)
+    class Valid(InitializedBase):
         """The board is currently in a valid state according to Sudoku rules."""
 
-        board: SudokuBoard
+        pass
 
-    @dataclass
-    class Invalid(Base):
+    @dataclass(frozen=True)
+    class Invalid(InitializedBase):
         """The board state has been found invalid (e.g., contradicting numbers)."""
 
-        board: SudokuBoard
+        pass
 
-    @dataclass
-    class Solved(Base):
+    @dataclass(frozen=True)
+    class Solved(InitializedBase):
         """The board has been solved successfully."""
 
-        board: SudokuBoard
+        pass
 
-    @dataclass
-    class Unsolvable(Base):
+    @dataclass(frozen=True)
+    class Unsolvable(InitializedBase):
         """The board was determined to be unsolvable after processing."""
 
-        board: SudokuBoard
+        pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class Error(Base):
         """An error occurred during the solving process, requiring attention."""
 
         message: str
 
 
-# Events
 class Event:
-    @dataclass
+    @dataclass(frozen=True)
     class Base:
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
+    class BoardInitialized(Base):
+        """Initialized"""
+
+        board: SudokuBoard
+
+    @dataclass(frozen=True)
     class StepCompleted(Base):
         """A step in the solving process was successfully completed."""
 
         idx: int
         value: int
 
-    @dataclass
+    @dataclass(frozen=True)
     class BoardValidated(Base):
         """The board was checked and found to be valid."""
 
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class BoardNotYetComplete(Base):
         """The board was checked for completion but is not yet complete."""
 
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class SolutionFound(Base):
         """The solver has successfully found a solution."""
 
         pass
 
-    @dataclass
-    class BoardInitialized(Base):
-        """Initialized"""
-
-        board: SudokuBoard
-
-    @dataclass
+    @dataclass(frozen=True)
     class SolutionFailed(Base):
         """The solver was unable to solve the board."""
 
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class ErrorDetected(Base):
         """An error was encountered during the solving process."""
 
         message: str
 
 
-# Commands
 class Command:
-    @dataclass
+    @dataclass(frozen=True)
     class Base:
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class InitializeSolver(Base):
         """Start the solver with the provided initial board."""
 
         grid: list[int | None]
 
-    @dataclass
+    @dataclass(frozen=True)
     class RunSolverStep(Base):
         """Perform a step in the solving algorithm."""
 
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class ValidateBoardState(Base):
         """Check if the current state of the board is valid."""
 
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class CheckCompletion(Base):
         """Verify if the board is completely solved."""
 
         pass
 
-    @dataclass
+    @dataclass(frozen=True)
     class HandleError(Base):
         """Process any detected error during solving."""
 
