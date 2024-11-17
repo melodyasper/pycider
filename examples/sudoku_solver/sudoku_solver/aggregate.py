@@ -40,7 +40,7 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
             case C.CheckCompletion(), S.Solving(board=board):
                 if SudokuEvaluator.is_board_complete(board):
                     return [E.SolutionFound(board=board)]
-                return [E.BoardNotYetComplete(board)]
+                return [E.BoardNotYetComplete()]
 
             case _:
                 return [

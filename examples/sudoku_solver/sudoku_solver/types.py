@@ -75,7 +75,7 @@ class Event:
     class BoardNotYetComplete(Base):
         """The board was checked for completion but is not yet complete."""
 
-        board: SudokuBoard
+        pass
 
     @dataclass
     class SolutionFound(Base):
