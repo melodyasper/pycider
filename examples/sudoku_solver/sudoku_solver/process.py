@@ -31,7 +31,7 @@ class SudokuProcess(processes.IProcess[E.Base, C.Base, S.Base]):
             case E.SolutionFailed(), _:
                 return []
 
-            # Event: ErrorDetected -> No further action, handle the error externally
+            # Event: ErrorDetected -> No further action
             case E.ErrorDetected(), _:
                 return []
 

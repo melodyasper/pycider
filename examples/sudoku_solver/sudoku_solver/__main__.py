@@ -112,6 +112,7 @@ if __name__ == "__main__":
 
     state = decider.initial_state()
     for event in events:
+        print(event)
         state = decider.evolve(state, event)
 
     match state:
