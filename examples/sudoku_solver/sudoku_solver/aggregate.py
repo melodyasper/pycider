@@ -33,7 +33,7 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
 
             case C.ValidateBoardState(), S.Solving(board=board):
                 if SudokuEvaluator.is_board_valid(board):
-                    return [E.BoardValidated(board=board)]
+                    return [E.BoardValidated()]
                 else:
                     return [E.SolutionFailed(board=board)]
 
@@ -60,7 +60,7 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                 new_board = SudokuBoard(values=values)
                 return S.Solving(board=new_board)
 
-            case E.BoardValidated(board=new_board), (S.Initial() | S.Solving()):
+            case E.BoardValidated(), S.Solving(board=board):
                 return S.Valid(board=new_board)
 
             case E.SolutionFound(board=new_board), (S.Valid() | S.Solving()):

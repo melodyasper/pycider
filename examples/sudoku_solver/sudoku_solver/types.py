@@ -69,7 +69,7 @@ class Event:
     class BoardValidated(Base):
         """The board was checked and found to be valid."""
 
-        board: SudokuBoard
+        pass
 
     @dataclass
     class BoardNotYetComplete(Base):
@@ -86,6 +86,7 @@ class Event:
     @dataclass
     class BoardInitialized(Base):
         """Initialized"""
+
         board: SudokuBoard
 
     @dataclass
