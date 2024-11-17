@@ -62,7 +62,8 @@ class Event:
     class StepCompleted(Base):
         """A step in the solving process was successfully completed."""
 
-        board: SudokuBoard
+        idx: int
+        value: int
 
     @dataclass
     class BoardValidated(Base):

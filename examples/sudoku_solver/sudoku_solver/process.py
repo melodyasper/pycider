@@ -12,27 +12,27 @@ class SudokuProcess(processes.IProcess[E.Base, C.Base, S.Base]):
         match event, state:
 
             # Event: StepCompleted -> Generate the next step command
-            case E.StepCompleted(board=_), _:
+            case E.StepCompleted(), _:
                 return [C.CheckCompletion()]
 
             # Event: BoardValidated -> Start solving if the board is valid
-            case E.BoardValidated(board=_), _:
+            case E.BoardValidated(), _:
                 return [C.RunSolverStep()]
 
             # Event: BoardNotYetComplete -> The board is not yet complete
-            case E.BoardNotYetComplete(board=_), _:
+            case E.BoardNotYetComplete(), _:
                 return [C.RunSolverStep()]
 
             # Event: SolutionFound -> No further action needed, board is solved
-            case E.SolutionFound(board=_), _:
+            case E.SolutionFound(), _:
                 return []
 
             # Event: SolutionFailed -> No further action, board is unsolvable
-            case E.SolutionFailed(board=_), _:
+            case E.SolutionFailed(), _:
                 return []
 
             # Event: ErrorDetected -> No further action, handle the error externally
-            case E.ErrorDetected(message=_), _:
+            case E.ErrorDetected(), _:
                 return []
 
             # Default case: No action for unhandled events

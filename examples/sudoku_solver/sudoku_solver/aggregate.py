@@ -33,10 +33,8 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                 step = SudokuEvaluator.find_next_single_step(board)
                 if step:
                     row, col, value = step
-                    new_values = board.values[:]
-                    new_values[row * 9 + col] = value
-                    new_board = SudokuBoard(values=new_values)
-                    return [E.StepCompleted(board=new_board)]
+                    idx = row * 9 + col
+                    return [E.StepCompleted(idx=idx, value=value)]
 
                 return [E.SolutionFailed(board=board)]
 
@@ -52,13 +50,18 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                 return [E.BoardNotYetComplete(board)]
 
             case _:
-                return [E.ErrorDetected(message="Unhandled command or invalid state.")]
+                return [E.ErrorDetected(message="Unhandled: {comman=} with {state=}.")]
 
     def evolve(self, state: S.Base, event: E.Base) -> S.Base:
         match event, state:
 
             # Event: StepCompleted -> Move to Solving state
-            case E.StepCompleted(board=new_board), S.Solving() | S.Valid():
+            case E.StepCompleted(idx=idx, value=value), S.Solving(
+                board=board
+            ) | S.Valid(board=board):
+                values = board.values[:]
+                values[idx] = value
+                new_board = SudokuBoard(values=values)
                 return S.Solving(board=new_board)
 
             # Event: BoardValidated -> Move to Valid state
