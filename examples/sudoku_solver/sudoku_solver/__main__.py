@@ -1,9 +1,7 @@
-from pycider import utils
-from pycider import processes
-from sudoku_solver import aggregate
-from sudoku_solver import process
-from sudoku_solver.types import Command
-from sudoku_solver.types import State
+from pycider import processes, utils
+
+from sudoku_solver import aggregate, process
+from sudoku_solver.types import Command, State
 
 
 def print_sudoku_board(board: list[int | None]) -> None:
@@ -11,7 +9,7 @@ def print_sudoku_board(board: list[int | None]) -> None:
         for row in range(0, 9):
             value = str(board[column * 9 + row])
             if value == "None":
-                value == "_"
+                value = "_"
             print(f"{value}", end=" ")
             if row in [2, 5]:
                 print("|", end=" ")

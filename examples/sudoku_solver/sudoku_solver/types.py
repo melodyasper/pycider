@@ -81,7 +81,7 @@ class Event:
     class SolutionFound(Base):
         """The solver has successfully found a solution."""
 
-        board: SudokuBoard
+        pass
 
     @dataclass
     class BoardInitialized(Base):
@@ -93,7 +93,7 @@ class Event:
     class SolutionFailed(Base):
         """The solver was unable to solve the board."""
 
-        board: SudokuBoard
+        pass
 
     @dataclass
     class ErrorDetected(Base):

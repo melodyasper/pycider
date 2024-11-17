@@ -1,12 +1,12 @@
 from typing import Sequence
 
+from pycider.deciders import Decider
+
 from sudoku_solver.sudoku.evaluator import SudokuEvaluator
 from sudoku_solver.sudoku.model import SudokuBoard
 from sudoku_solver.types import Command as C
 from sudoku_solver.types import Event as E
 from sudoku_solver.types import State as S
-
-from pycider.deciders import Decider
 
 
 class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
@@ -29,17 +29,17 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                     idx = row * 9 + col
                     return [E.StepCompleted(idx=idx, value=value)]
 
-                return [E.SolutionFailed(board=board)]
+                return [E.SolutionFailed()]
 
             case C.ValidateBoardState(), S.Solving(board=board):
                 if SudokuEvaluator.is_board_valid(board):
                     return [E.BoardValidated()]
                 else:
-                    return [E.SolutionFailed(board=board)]
+                    return [E.SolutionFailed()]
 
             case C.CheckCompletion(), S.Solving(board=board):
                 if SudokuEvaluator.is_board_complete(board):
-                    return [E.SolutionFound(board=board)]
+                    return [E.SolutionFound()]
                 return [E.BoardNotYetComplete()]
 
             case _:
@@ -61,13 +61,13 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
                 return S.Solving(board=new_board)
 
             case E.BoardValidated(), S.Solving(board=board):
-                return S.Valid(board=new_board)
+                return S.Valid(board=board)
 
-            case E.SolutionFound(board=new_board), (S.Valid() | S.Solving()):
-                return S.Solved(board=new_board)
+            case E.SolutionFound(), (S.Valid(board=board) | S.Solving(board=board)):
+                return S.Solved(board=board)
 
-            case E.SolutionFailed(board=new_board), (S.Solving() | S.Valid()):
-                return S.Unsolvable(board=new_board)
+            case E.SolutionFailed(), (S.Solving(board=board) | S.Valid(board=board)):
+                return S.Unsolvable(board=board)
 
             case E.ErrorDetected(message=msg), _:
                 return S.Error(message=msg)
