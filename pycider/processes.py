@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from typing import Generic, Sequence, TypeVar
+from collections.abc import Callable, Iterator
+from typing import Generic, TypeVar
 
 from pycider.deciders import Decider
 
@@ -29,27 +29,27 @@ class IProcess(ABC, Generic[E, C, S]):
         pass
 
     @abstractmethod
-    def resume(self, state: S) -> Sequence[C]:
-        """Returns a sequence of commands to resume a process from a given state.
+    def resume(self, state: S) -> Iterator[C]:
+        """Returns an iterator of commands to resume a process from a given state.
 
         Parameters
             state: State of the current process
 
         Returns
-            An sequence of commands to act on.
+            An iterator of commands to act on.
         """
         pass
 
     @abstractmethod
-    def react(self, state: S, event: E) -> Sequence[C]:
-        """Returns a sequence of commands as a reaction to an event.
+    def react(self, state: S, event: E) -> Iterator[C]:
+        """Returns an iterator of commands as a reaction to an event.
 
         Parameters
             state: State of the current process
             event: Event currently being processed
 
         Returns
-            A sequence of commands to act on.
+            An iterator of commands to act on.
         """
         pass
 
@@ -108,14 +108,15 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
                     return state
                 return p.evolve(state, new_event)
 
-            def resume(self, state: S) -> Sequence[CI]:
-                return list(map(convert_command, p.resume(state)))
+            def resume(self, state: S) -> Iterator[CI]:
+                yield from map(convert_command, p.resume(state))
 
-            def react(self, state: S, event: EI) -> Sequence[CI]:
+            def react(self, state: S, event: EI) -> Iterator[CI]:
                 new_event = select_event(event)
                 if new_event is None:
-                    return []
-                return list(map(convert_command, p.react(state, new_event)))
+                    yield from []
+                else:
+                    yield from map(convert_command, p.react(state, new_event))
 
             def initial_state(self) -> S:
                 return p.initial_state()
@@ -128,18 +129,13 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
 
 def process_collect_fold(
     proc: IProcess[E, C, S], state: S, events: list[E]
-) -> Sequence[C]:
-    def loop(state: S, events: list[E], all_commands: list[C]):
-        if len(events) == 0:
-            return all_commands
-
+) -> Iterator[C]:
+    new_state = state
+    while len(events) > 0:
         event = events.pop(0)
         new_state = proc.evolve(state, event)
         commands = proc.react(new_state, event)
-        all_commands.extend(commands)
-        return loop(new_state, events, all_commands)
-
-    return loop(state, events, [])
+        yield from commands
 
 
 PS = TypeVar("PS")
@@ -180,14 +176,11 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
         """
 
         class InternalDecider(Decider[E, C, tuple[DS, PS]]):
-            def decide(self, command: C, state: tuple[DS, PS]) -> Sequence[E]:
+            def decide(self, command: C, state: tuple[DS, PS]) -> Iterator[E]:
                 # NOTE: This is a deviation.
                 decider_state = state[0]
-
-                def loop(commands: list[C], all_events: list[E]):
-                    nonlocal decider_state
-                    if len(commands) == 0:
-                        return all_events
+                commands = [command]
+                while len(commands) > 0:
                     command = commands.pop(0)
                     new_events = list(decider.decide(command, decider_state))
                     # NOTE: This is a deviation.
@@ -197,10 +190,7 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                         proc, state[1], new_events.copy()
                     )
                     commands.extend(new_commands)
-                    all_events.extend(new_events)
-                    return loop(commands, all_events)
-
-                return loop([command], [])
+                    yield from new_events
 
             def evolve(self, state: tuple[DS, PS], event: E) -> tuple[DS, PS]:
                 return (decider.evolve(state[0], event), proc.evolve(state[1], event))

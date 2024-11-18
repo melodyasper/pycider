@@ -41,4 +41,4 @@ def test_update_server():
     assert response_update.version == ""
     assert response_update.data == b""
     assert response_update.error_code == -1
-    assert response_update.error_message == f"Version 9.9.9 does not exist."
+    assert response_update.error_message == "Version 9.9.9 does not exist."

@@ -1,6 +1,7 @@
 import dataclasses
 from abc import ABC
-from typing import Sequence, cast
+from collections.abc import Iterator
+from typing import cast
 
 from pycider.deciders import ComposeDecider, Decider, ManyDecider
 from pycider.processes import IProcess, ProcessAdapt, ProcessCombineWithDecider
@@ -50,19 +51,19 @@ class CatLight(IProcess[Event, Command, State]):
             case _:
                 return state
 
-    def resume(self, state: State) -> Sequence[Command]:
+    def resume(self, state: State) -> Iterator[Command]:
         match state:
             case CatLightStateWakingUp():
-                return [CatLightCommandWakeUp()]
+                yield from [CatLightCommandWakeUp()]
             case _:
-                return []
+                yield from []
 
-    def react(self, state: State, event: Event) -> Sequence[Command]:
+    def react(self, state: State, event: Event) -> Iterator[Command]:
         match state, event:
             case CatLightStateWakingUp(), CatLightEventSwitchedOn():
-                return [CatLightCommandWakeUp()]
+                yield from [CatLightCommandWakeUp()]
             case _:
-                return []
+                yield from []
 
     def initial_state(self) -> State:
         return CatLightStateIdle()
@@ -103,14 +104,14 @@ class Cat(Decider[Event, Command, State]):
     def is_terminal(self, state: State) -> bool:
         return False
 
-    def decide(self, command: Command, state: State) -> Sequence[Event]:
+    def decide(self, command: Command, state: State) -> Iterator[Event]:
         match (command, state):
             case (CatCommandWakeUp(), CatStateAsleep()):
-                return [CatEventWokeUp()]
+                yield from [CatEventWokeUp()]
             case CatCommandGetToSleep(), CatStateAwake():
-                return [CatEventGotToSleep()]
+                yield from [CatEventGotToSleep()]
             case _:
-                return []
+                yield from []
 
     def evolve(self, state: State, event: Event) -> State:
         match (state, event):
@@ -174,20 +175,20 @@ class BulbStateBlown(State):
 
 
 class Bulb(Decider[Event, Command, State]):
-    def decide(self, command: Command, state: State) -> Sequence[Event]:
+    def decide(self, command: Command, state: State) -> Iterator[Event]:
         match command, state:
             case BulbCommandFit(), BulbStateNotFitted():
-                return [BulbEventFitted(max_uses=command.max_uses)]
+                yield from [BulbEventFitted(max_uses=command.max_uses)]
             case BulbCommandSwitchOn(), BulbStateWorking(
                 is_on=False, remaining_uses=remaining_uses
             ) if remaining_uses > 0:
-                return [BulbEventSwitchedOn()]
+                yield from [BulbEventSwitchedOn()]
             case BulbCommandSwitchOn(), BulbStateWorking(is_on=False):
-                return [BulbEventBlew()]
+                yield from [BulbEventBlew()]
             case BulbCommandSwitchOff(), BulbStateWorking(is_on=True):
-                return [BulbEventSwitchedOff()]
+                yield from [BulbEventSwitchedOff()]
             case _:
-                return []
+                yield from []
 
     def evolve(self, state: State, event: Event) -> State:
         match state, event:
@@ -214,7 +215,6 @@ class Bulb(Decider[Event, Command, State]):
 
 
 def test_cat_and_bulb() -> None:
-
     cnb = InMemory(ComposeDecider.build(Cat(), Bulb()))
 
     cnb(Left(CatCommandWakeUp()))
@@ -222,8 +222,6 @@ def test_cat_and_bulb() -> None:
     cnb(Right(BulbCommandFit(max_uses=5)))
     cnb(Right(BulbCommandSwitchOn()))
     cnb(Right(BulbCommandSwitchOff()))
-
-    print(f"{cnb.state=}")
 
     assert len(cnb.state) == 2
     assert type(cnb.state[0]) is CatStateAsleep
@@ -237,11 +235,8 @@ def test_in_memory_many_cats() -> None:
 
     in_memory(("boulette", CatCommandGetToSleep()))
     in_memory(("boulette", CatCommandWakeUp()))
-
     in_memory(("guevara", CatCommandWakeUp()))
     in_memory(("guevara", CatCommandGetToSleep()))
-
-    print(f"{in_memory.state=}")
 
     assert type(in_memory.state["boulette"]) is CatStateAwake
     assert type(in_memory.state["guevara"]) is CatStateAsleep
@@ -268,14 +263,13 @@ def test_compose_process() -> None:
 
     adapted_process = ProcessAdapt.build(select_event, command_converter, CatLight())
     cat_bulb = ProcessCombineWithDecider.build(adapted_process, cat_and_bulb)
+
     cat_b = InMemory(cat_bulb)
     cat_b(Right(BulbCommandFit(max_uses=5)))
     cat_b(Left(CatCommandGetToSleep()))
     cat_b(Left(CatCommandWakeUp()))
     cat_b(Right(BulbCommandSwitchOn()))
     cat_b(Right(BulbCommandSwitchOff()))
-
-    print(f"{cat_b.state=}")
 
     assert len(cat_b.state) == 2
     assert len(cat_b.state[0]) == 2

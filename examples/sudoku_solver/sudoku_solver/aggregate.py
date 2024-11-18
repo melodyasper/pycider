@@ -1,12 +1,12 @@
-from typing import Sequence
-
-from pycider.deciders import Decider
+from collections.abc import Iterator
 
 from sudoku_solver.sudoku.evaluator import SudokuEvaluator
 from sudoku_solver.sudoku.model import SudokuBoard
 from sudoku_solver.types import Command as C
 from sudoku_solver.types import Event as E
 from sudoku_solver.types import State as S
+
+from pycider.deciders import Decider
 
 
 class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
@@ -16,34 +16,35 @@ class SudokuBoardAggregate(Decider[E.Base, C.Base, S.Base]):
     def is_terminal(self, state: S.Base) -> bool:
         return isinstance(state, S.Unsolvable) or isinstance(state, S.Solved)
 
-    def decide(self, command: C.Base, state: S.Base) -> Sequence[E.Base]:
+    def decide(self, command: C.Base, state: S.Base) -> Iterator[E.Base]:
         match command, state:
             case C.InitializeSolver(grid=grid), S.Initial():
                 board = SudokuBoard(values=grid)
-                return [E.BoardInitialized(board=board)]
+                yield from [E.BoardInitialized(board=board)]
 
             case C.RunSolverStep(), S.Valid(board=board) | S.Solving(board=board):
                 step = SudokuEvaluator.find_next_single_step(board)
                 if step:
                     row, col, value = step
                     idx = row * 9 + col
-                    return [E.StepCompleted(idx=idx, value=value)]
-
-                return [E.SolutionFailed()]
+                    yield from [E.StepCompleted(idx=idx, value=value)]
+                else:
+                    yield from [E.SolutionFailed()]
 
             case C.ValidateBoardState(), S.Solving(board=board):
                 if SudokuEvaluator.is_board_valid(board):
-                    return [E.BoardValidated()]
+                    yield from [E.BoardValidated()]
                 else:
-                    return [E.SolutionFailed()]
+                    yield from [E.SolutionFailed()]
 
             case C.CheckCompletion(), S.Solving(board=board):
                 if SudokuEvaluator.is_board_complete(board):
-                    return [E.SolutionFound()]
-                return [E.BoardNotYetComplete()]
+                    yield from [E.SolutionFound()]
+                else:
+                    yield from [E.BoardNotYetComplete()]
 
             case _:
-                return [
+                yield from [
                     E.ErrorDetected(message=f"Unhandled: {command=} with {state=}.")
                 ]
 

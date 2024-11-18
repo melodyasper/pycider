@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Iterator
 
 from grpc_server.types import UpdateCommand as C
 from grpc_server.types import UpdateEvent as E
@@ -54,18 +54,18 @@ class UpdateAggregate(Decider[E.Base, C.Base, S.Base]):
             case _:
                 return state
 
-    def decide(self, command: C.Base, state: S.Base) -> Sequence[E.Base]:
+    def decide(self, command: C.Base, state: S.Base) -> Iterator[E.Base]:
         match command, state:
             case C.ListAvailableVersions(), S.NewConnection():
                 """Requesting a list of versions."""
-                return command(list(VERSION_LIST_TO_DATA.keys()))
+                yield from command(list(VERSION_LIST_TO_DATA.keys()))
 
             case (
                 C.DownloadUpdate(),
                 S.NewConnection(),
             ):
                 """ "Requesting a download of a particular version"""
-                return command(list(VERSION_LIST_TO_DATA.keys()))
+                yield from command(list(VERSION_LIST_TO_DATA.keys()))
 
             case _:
-                return []
+                yield from []

@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from typing import Generic, Sequence, TypeVar
 
 from pycider.deciders import Decider
@@ -19,19 +20,19 @@ class InMemory(Generic[E, C, S]):
         self._decider = decider
         self.state: S = self._decider.initial_state()  #: State of the decider
 
-    def command(self, command: C) -> Sequence[E]:
+    def command(self, command: C) -> Iterator[E]:
         """Decide over a command and evolves the internal state.
 
         Parameters:
             command: Command to decide over
 
         Returns:
-            The events that were evolved over resulting from decide
+            An iterator over the events.
         """
-        events = self._decider.decide(command, self.state)
+        events = list(self._decider.decide(command, self.state))
         for event in events:
             self.state = self._decider.evolve(self.state, event)
-        return events
+            yield event
 
     def __call__(self, command: C) -> Sequence[E]:
         """Decide over a command and evolves the internal state.
@@ -40,6 +41,6 @@ class InMemory(Generic[E, C, S]):
             command: Command to decide over
 
         Returns:
-            The events that were evolved over resulting from decide
+            A sequence of events
         """
-        return self.command(command)
+        return list(self.command(command))

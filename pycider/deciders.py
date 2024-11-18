@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable, MutableMapping
-from typing import Generic, Sequence, TypeVar
+from collections.abc import Callable, Iterator, MutableMapping
+from typing import Generic, TypeVar
 
 from pycider.types import Either, Left, Right
 
@@ -53,7 +53,7 @@ class BaseDecider(ABC, Generic[E, C, SI, SO]):
         pass
 
     @abstractmethod
-    def decide(self, command: C, state: SI) -> Sequence[E]:
+    def decide(self, command: C, state: SI) -> Iterator[E]:
         """Return a set of events from a command and state.
 
         Parameters
@@ -61,7 +61,7 @@ class BaseDecider(ABC, Generic[E, C, SI, SO]):
             state: State of the current decider
 
         Returns
-            A sequence of events resulting from the command.
+            An iterator of events resulting from the command.
         """
         pass
 
@@ -112,15 +112,15 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
         class InternalDecider(Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]):
             def decide(
                 self, command: Either[CX, CY], state: tuple[SX, SY]
-            ) -> Sequence[Either[EX, EY]]:
+            ) -> Iterator[Either[EX, EY]]:
                 match command:
                     case Left():
-                        return list(
-                            map(lambda v: Left(v), dx.decide(command.value, state[0]))
+                        yield from map(
+                            lambda v: Left(v), dx.decide(command.value, state[0])
                         )
                     case Right():
-                        return list(
-                            map(lambda v: Right(v), dy.decide(command.value, state[1]))
+                        yield from map(
+                            lambda v: Right(v), dy.decide(command.value, state[1])
                         )
                     case _:
                         raise RuntimeError("Type not implemented")
@@ -157,8 +157,8 @@ class NeutralDecider:
         """
 
         class InternalDecider(Decider[None, None, tuple[()]]):
-            def decide(self, command: None, state: tuple[()]) -> Sequence[None]:
-                return []
+            def decide(self, command: None, state: tuple[()]) -> Iterator[None]:
+                yield from []
 
             def evolve(self, state: tuple[()], event: None) -> tuple[()]:
                 return ()
@@ -216,7 +216,7 @@ class ManyDecider(
 
     def decide(
         self, command: tuple[I, C], state: MutableMapping[I, S]
-    ) -> Sequence[tuple[I, E]]:
+    ) -> Iterator[tuple[I, E]]:
         identifier = command[0]
         current_command = command[1]
 
@@ -224,13 +224,10 @@ class ManyDecider(
         if current_state is None:
             current_state = self.decider().initial_state()
 
-        events = list(
-            map(
-                lambda event: (identifier, event),
-                self.decider().decide(current_command, current_state),
-            )
+        yield from map(
+            lambda event: (identifier, event),
+            self.decider().decide(current_command, current_state),
         )
-        return events
 
     def is_terminal(self, state: MutableMapping[I, S]) -> bool:
         for member_state in state.values():
@@ -284,11 +281,11 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
         """
 
         class InternalDecider(BaseDecider[E, C, S, SO]):
-            def decide(self, command: C, state: S) -> Sequence[E]:
+            def decide(self, command: C, state: S) -> Iterator[E]:
                 new_command = fci(command)
                 if new_command is None:
-                    return []
-                return list(map(feo, decider.decide(new_command, fsi(state))))
+                    return
+                yield from map(feo, decider.decide(new_command, fsi(state)))
 
             def evolve(self, state: S, event: E) -> SO:
                 new_event = fei(event)
@@ -328,8 +325,8 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
         """
 
         class InternalDecider(BaseDecider[E, C, SI, SB]):
-            def decide(self, command: C, state: SI) -> Sequence[E]:
-                return d.decide(command, state)
+            def decide(self, command: C, state: SI) -> Iterator[E]:
+                yield from d.decide(command, state)
 
             def evolve(self, state: SI, event: E) -> SB:
                 return f(d.evolve(state, event))
@@ -352,11 +349,9 @@ class Map2Decider(Generic[E, C, S, SX, SY, SI]):
         dy: BaseDecider[E, C, SI, SY],
     ) -> BaseDecider[E, C, SI, S]:
         class InternalDecider(BaseDecider[E, C, SI, S]):
-            def decide(self, command: C, state: SI) -> Sequence[E]:
-                events: list[E] = []
-                events.extend(dx.decide(command, state))
-                events.extend(dy.decide(command, state))
-                return events
+            def decide(self, command: C, state: SI) -> Iterator[E]:
+                yield from dx.decide(command, state)
+                yield from dy.decide(command, state)
 
             def evolve(self, state: SI, event: E) -> S:
                 sx = dx.evolve(state, event)
