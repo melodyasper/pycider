@@ -1,7 +1,6 @@
-from sudoku_solver import aggregate, process
-from sudoku_solver.types import Command, State
-
 from pycider import processes, utils
+
+from sudoku_solver import aggregate, process
 
 
 def print_sudoku_board(board: list[int | None]) -> None:
@@ -22,7 +21,38 @@ if __name__ == "__main__":
     processor = process.SudokuProcess()
     decider = aggregate.SudokuBoardAggregate()
 
-    program = processes.ProcessCombineWithDecider.build(processor, decider)
+    def convert_command(
+        command_out: process.SudokuProcessCommand,
+    ) -> aggregate.SudokuBoardCommand:
+        print(f"{command_out=}")
+        match command_out:
+            case process.ProcessCheckCompletion():
+                return aggregate.CheckCompletion()
+            case process.ProcessRunSolverStep():
+                return aggregate.RunSolverStep()
+            case _:
+                raise RuntimeError("Impossible area reached")
+
+    def select_event(
+        event_in: aggregate.SudokuBoardEvent,
+    ) -> process.SudokuProcessEvent | None:
+        print(f"{event_in=}")
+        match event_in:
+            case aggregate.BoardInitialized():
+                return process.ProcessStepCompleted()
+            case aggregate.StepCompleted():
+                return process.ProcessStepCompleted()
+            case aggregate.BoardValidated():
+                return process.ProcessBoardValidated()
+            case aggregate.BoardNotYetComplete():
+                return process.ProcessBoardNotYetComplete()
+            case _:
+                return None
+
+    adapted_process: processes.IProcess[
+        process.Event, aggregate.Command, process.State
+    ] = processes.ProcessAdapt().build(select_event, convert_command, processor)
+    program = processes.ProcessCombineWithDecider.build(adapted_process, decider)
     solver = utils.InMemory(program)
 
     grid = [
@@ -108,7 +138,7 @@ if __name__ == "__main__":
         None,
         1,
     ]
-    events = solver(Command.InitializeSolver(grid=grid))
+    events = solver(aggregate.InitializeSolver(grid=grid))
 
     state = decider.initial_state()
     for event in events:
@@ -116,10 +146,10 @@ if __name__ == "__main__":
         state = decider.evolve(state, event)
 
     match state:
-        case State.Solved(board=board):
+        case aggregate.Solved(board=board):
             print("Solved board:")
             print_sudoku_board(board.values)
-        case State.Unsolvable(board=board):
+        case aggregate.Unsolvable(board=board):
             print("Board could not be solved:")
             print_sudoku_board(board.values)
         case _:

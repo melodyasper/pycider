@@ -1,14 +1,44 @@
-from sudoku_solver import aggregate, process
-from sudoku_solver.types import Command, State
-
 from pycider import processes, utils
+
+from sudoku_solver import aggregate, process
 
 
 def test_sudoku_solver_can_solve_simple_puzzle():
     processor = process.SudokuProcess()
     decider = aggregate.SudokuBoardAggregate()
 
-    program = processes.ProcessCombineWithDecider.build(processor, decider)
+    def convert_command(
+        command_out: process.SudokuProcessCommand,
+    ) -> aggregate.SudokuBoardCommand:
+        print(f"{command_out=}")
+        match command_out:
+            case process.ProcessCheckCompletion():
+                return aggregate.CheckCompletion()
+            case process.ProcessRunSolverStep():
+                return aggregate.RunSolverStep()
+            case _:
+                raise RuntimeError("Impossible area reached")
+
+    def select_event(
+        event_in: aggregate.SudokuBoardEvent,
+    ) -> process.SudokuProcessEvent | None:
+        print(f"{event_in=}")
+        match event_in:
+            case aggregate.BoardInitialized():
+                return process.ProcessStepCompleted()
+            case aggregate.StepCompleted():
+                return process.ProcessStepCompleted()
+            case aggregate.BoardValidated():
+                return process.ProcessBoardValidated()
+            case aggregate.BoardNotYetComplete():
+                return process.ProcessBoardNotYetComplete()
+            case _:
+                return None
+
+    adapted_process = processes.ProcessAdapt().build(
+        select_event, convert_command, processor
+    )
+    program = processes.ProcessCombineWithDecider.build(adapted_process, decider)
     solver = utils.InMemory(program)
 
     grid = [
@@ -95,13 +125,14 @@ def test_sudoku_solver_can_solve_simple_puzzle():
         1,
     ]
 
-    events = solver(Command.InitializeSolver(grid=grid))
+    events = solver(aggregate.InitializeSolver(grid=grid))
+    print(events)
 
     state = decider.initial_state()
     for event in events:
         state = decider.evolve(state, event)
 
-    assert isinstance(state, State.Solved)
+    assert isinstance(state, aggregate.Solved)
     assert state.board.values == [
         4,
         6,

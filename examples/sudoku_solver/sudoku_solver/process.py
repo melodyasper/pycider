@@ -1,54 +1,91 @@
 from collections.abc import Iterator
-
-from sudoku_solver import aggregate
-from sudoku_solver.types import Command as C
-from sudoku_solver.types import Event as E
-from sudoku_solver.types import State as S
+from dataclasses import dataclass
 
 from pycider import processes
 
+from sudoku_solver.types import Command, Event, State
 
-class SudokuProcess(processes.IProcess[E.Base, C.Base, S.Base]):
-    def react(self, state: S.Base, event: E.Base) -> Iterator[C.Base]:
+
+@dataclass(frozen=True)
+class SudokuProcessCommand(Command):
+    pass
+
+
+@dataclass(frozen=True)
+class SudokuProcessEvent(Event):
+    pass
+
+
+@dataclass(frozen=True)
+class SudokuProcessState(State):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessInitialState(SudokuProcessState):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessStepCompleted(SudokuProcessEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessBoardValidated(SudokuProcessEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessCheckCompletion(SudokuProcessCommand):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessRunSolverStep(SudokuProcessCommand):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessBoardNotYetComplete(SudokuProcessEvent):
+    pass
+
+
+class SudokuProcess(
+    processes.IProcess[SudokuProcessEvent, SudokuProcessCommand, SudokuProcessState]
+):
+    def react(
+        self, state: SudokuProcessState, event: SudokuProcessEvent
+    ) -> Iterator[SudokuProcessCommand]:
         """Returns an iterator of commands as a reaction to an event."""
         match event, state:
 
             # Event: StepCompleted -> Generate the next step command
-            case E.StepCompleted() | E.BoardInitialized(), _:
-                yield from [C.CheckCompletion()]
+            case ProcessStepCompleted(), _:
+                yield from [ProcessCheckCompletion()]
 
             # Event: BoardValidated -> Start solving if the board is valid
-            case E.BoardValidated(), _:
-                yield from [C.RunSolverStep()]
+            case ProcessBoardValidated(), _:
+                yield from [ProcessRunSolverStep()]
 
             # Event: BoardNotYetComplete -> The board is not yet complete
-            case E.BoardNotYetComplete(), _:
-                yield from [C.RunSolverStep()]
-
-            # Event: SolutionFound -> No further action needed, board is solved
-            case E.SolutionFound(), _:
-                yield from []
-
-            # Event: SolutionFailed -> No further action, board is unsolvable
-            case E.SolutionFailed(), _:
-                yield from []
-
-            # Event: ErrorDetected -> No further action
-            case E.ErrorDetected(), _:
-                yield from []
+            case ProcessBoardNotYetComplete(), _:
+                yield from [ProcessRunSolverStep()]
 
             # Default case: No action for unhandled events
             case _:
                 yield from []
 
-    def evolve(self, state: S.Base, event: E.Base) -> S.Base:
+    def evolve(
+        self, state: SudokuProcessState, event: SudokuProcessEvent
+    ) -> SudokuProcessState:
         return state
 
-    def resume(self, state: S.Base) -> Iterator[C.Base]:
+    def resume(self, state: SudokuProcessState) -> Iterator[SudokuProcessCommand]:
         yield from []
 
-    def initial_state(self) -> S.Base:
-        return aggregate.SudokuBoardAggregate().initial_state()
+    def initial_state(self) -> SudokuProcessState:
+        return ProcessInitialState()
 
-    def is_terminal(self, state: S.Base) -> bool:
+    def is_terminal(self, state: SudokuProcessState) -> bool:
         return True
