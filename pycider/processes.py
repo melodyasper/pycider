@@ -175,30 +175,53 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
         The state of neither process nor decider is actually changed by `decide`. You will still need to call `evolve` to reach the final end states.
         """
 
-        class InternalDecider(Decider[E, C, tuple[DS, PS]]):
-            def decide(self, command: C, state: tuple[DS, PS]) -> Iterator[E]:
+        InnerE = TypeVar("InnerE")  # Event type for the inner class
+        InnerC = TypeVar("InnerC")  # Command type for the inner class
+        InnerPS = TypeVar("InnerPS")  # Process state type for the inner class
+        InnerDS = TypeVar("InnerDS")  # Decider state type for the inner class
+
+        class InternalDecider(Decider[InnerE, InnerC, tuple[InnerDS, InnerPS]]):
+            def __init__(
+                self,
+                process: IProcess[InnerE, InnerC, InnerPS],
+                decision: Decider[InnerE, InnerC, InnerDS],
+            ):
+                self._proc = process
+                self._decider = decision
+
+            def decide(
+                self, command: InnerC, state: tuple[InnerDS, InnerPS]
+            ) -> Iterator[InnerE]:
+
                 # NOTE: This is a deviation.
                 decider_state = state[0]
                 commands = [command]
                 while len(commands) > 0:
                     command = commands.pop(0)
-                    new_events = list(decider.decide(command, decider_state))
+                    new_events = list(self._decider.decide(command, decider_state))
                     # NOTE: This is a deviation.
                     for event in new_events:
-                        decider_state = decider.evolve(decider_state, event)
+                        decider_state = self._decider.evolve(decider_state, event)
                     new_commands = process_collect_fold(
-                        proc, state[1], new_events.copy()
+                        self._proc, state[1], new_events.copy()
                     )
                     commands.extend(new_commands)
                     yield from new_events
 
-            def evolve(self, state: tuple[DS, PS], event: E) -> tuple[DS, PS]:
-                return (decider.evolve(state[0], event), proc.evolve(state[1], event))
+            def evolve(
+                self, state: tuple[InnerDS, InnerPS], event: InnerE
+            ) -> tuple[InnerDS, InnerPS]:
+                return (
+                    self._decider.evolve(state[0], event),
+                    self._proc.evolve(state[1], event),
+                )
 
-            def initial_state(self) -> tuple[DS, PS]:
-                return (decider.initial_state(), proc.initial_state())
+            def initial_state(self) -> tuple[InnerDS, InnerPS]:
+                return (self._decider.initial_state(), self._proc.initial_state())
 
-            def is_terminal(self, state: tuple[DS, PS]) -> bool:
-                return decider.is_terminal(state[0]) and proc.is_terminal(state[1])
+            def is_terminal(self, state: tuple[InnerDS, InnerPS]) -> bool:
+                return self._decider.is_terminal(state[0]) and self._proc.is_terminal(
+                    state[1]
+                )
 
-        return InternalDecider()
+        return InternalDecider(proc, decider)

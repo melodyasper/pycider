@@ -1,6 +1,6 @@
-from pycider import processes, utils
-
 from sudoku_solver import aggregate, process
+
+from pycider import processes, utils
 
 
 def test_sudoku_solver_can_solve_simple_puzzle():

@@ -1,6 +1,6 @@
-from pycider import processes, utils
-
 from sudoku_solver import aggregate, process
+
+from pycider import processes, utils
 
 
 def print_sudoku_board(board: list[int | None]) -> None:

@@ -1,9 +1,9 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from pycider import processes
-
 from sudoku_solver.types import Command, Event, State
+
+from pycider import processes
 
 
 @dataclass(frozen=True)
