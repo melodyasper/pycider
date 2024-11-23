@@ -90,16 +90,18 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
         convert_command: Callable[[CO], CI],
         p: IProcess[EO, CO, S],
     ) -> None:
+        """Convert Commands/Events into output variants.
+
+        Parameters:
+            select_event: A callaback that converts input Events to output Events.
+            convert_command: A callback that converts input Commands to output Commands.
+        """
         self._p = p
         self._select_event = select_event
         self._convert_command = convert_command
 
     def build(self) -> IProcess[EI, CI, S]:
         """Convert Commands/Events into output variants.
-
-        Parameters:
-            select_event: A callaback that converts input Events to output Events.
-            convert_command: A callback that converts input Commands to output Commands.
 
         Returns:
             A new Process that can given input Events/Commands return new output variants.
@@ -167,15 +169,17 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
     """Combine a Processor with a Decider together."""
 
     def __init__(self, proc: IProcess[E, C, PS], decider: Decider[E, C, DS]) -> None:
-        self._proc = proc
-        self._decider = decider
-
-    def build(self) -> Decider[E, C, tuple[DS, PS]]:
         """Combine a Process and a Decider into a single Decider.
 
         Parameters:
             proc: The process being combined.
             decider: The decider its being combined with.
+        """
+        self._proc = proc
+        self._decider = decider
+
+    def build(self) -> Decider[E, C, tuple[DS, PS]]:
+        """Combine a Process and a Decider into a single Decider.
 
         Results:
             A single Decider.
