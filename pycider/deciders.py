@@ -98,7 +98,7 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
 
     @classmethod
     def build(
-        cls, dx: Decider[EX, CX, SX], dy: Decider[EY, CY, SY]
+        cls, left_dx: Decider[EX, CX, SX], right_dy: Decider[EY, CY, SY]
     ) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
         """Given two deciders return a single one.
 
@@ -109,40 +109,60 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
         Returns:
             A single decider made of two deciders."""
 
-        class InternalDecider(Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]):
+        InnerEX = TypeVar("InnerEX")
+        InnerEY = TypeVar("InnerEY")
+        InnerCX = TypeVar("InnerCX")
+        InnerCY = TypeVar("InnerCY")
+        InnerSX = TypeVar("InnerSX")
+        InnerSY = TypeVar("InnerSY")
+
+        class InternalDecider(
+            Decider[
+                Either[InnerEX, InnerEY],
+                Either[InnerCX, InnerCY],
+                tuple[InnerSX, InnerSY],
+            ]
+        ):
+
+            def __init__(
+                self,
+                dx: Decider[InnerEX, InnerCX, InnerSX],
+                dy: Decider[InnerEY, InnerCY, InnerSY],
+            ) -> None:
+                self._dx = dx
+                self._dy = dy
+
             def decide(
-                self, command: Either[CX, CY], state: tuple[SX, SY]
-            ) -> Iterator[Either[EX, EY]]:
+                self, command: Either[InnerCX, InnerCY], state: tuple[InnerSX, InnerSY]
+            ) -> Iterator[Either[InnerEX, InnerEY]]:
                 match command:
                     case Left():
                         yield from map(
-                            lambda v: Left(v), dx.decide(command.value, state[0])
+                            lambda v: Left(v), self._dx.decide(command.value, state[0])
                         )
                     case Right():
                         yield from map(
-                            lambda v: Right(v), dy.decide(command.value, state[1])
+                            lambda v: Right(v), self._dy.decide(command.value, state[1])
                         )
-                    case _:
-                        raise RuntimeError("Type not implemented")
 
             def evolve(
-                self, state: tuple[SX, SY], event: Left[EX] | Right[EY]
-            ) -> tuple[SX, SY]:
+                self,
+                state: tuple[InnerSX, InnerSY],
+                event: Left[InnerEX] | Right[InnerEY],
+            ) -> tuple[InnerSX, InnerSY]:
                 match event:
                     case Left():
-                        return (dx.evolve(state[0], event.value), state[1])
+                        return (self._dx.evolve(state[0], event.value), state[1])
                     case Right():
-                        return (state[0], dy.evolve(state[1], event.value))
-                    case _:
-                        raise RuntimeError("Type not implemented")
+                        return (state[0], self._dy.evolve(state[1], event.value))
 
-            def initial_state(self) -> tuple[SX, SY]:
-                return (dx.initial_state(), dy.initial_state())
+            def initial_state(self) -> tuple[InnerSX, InnerSY]:
+                return (self._dx.initial_state(), self._dy.initial_state())
 
-            def is_terminal(self, state: tuple[SX, SY]) -> bool:
-                return dx.is_terminal(state[0]) and dy.is_terminal(state[1])
+            def is_terminal(self, state: tuple[InnerSX, InnerSY]) -> bool:
+                return self._dx.is_terminal(state[0]) and self._dy.is_terminal(state[1])
 
-        return InternalDecider()
+        return InternalDecider(left_dx, right_dy)
 
 
 class NeutralDecider:

@@ -5,44 +5,44 @@ from typing import cast
 
 from pycider.deciders import ComposeDecider, Decider, ManyDecider
 from pycider.processes import IProcess, ProcessAdapt, ProcessCombineWithDecider
-from pycider.types import Left, Right
+from pycider.types import Either, Left, Right
 from pycider.utils import InMemory
 
 
-class State(ABC):
+class CatLightState(ABC):
     pass
 
 
-class Event(ABC):
+class CatLightEvent(ABC):
     pass
 
 
-class Command(ABC):
+class CatLightCommand(ABC):
     pass
 
 
-class CatLightEventSwitchedOn(Event):
+class CatLightEventSwitchedOn(CatLightEvent):
     pass
 
 
-class CatLightEventWokeUp(Event):
+class CatLightEventWokeUp(CatLightEvent):
     pass
 
 
-class CatLightCommandWakeUp(Command):
+class CatLightCommandWakeUp(CatLightCommand):
     pass
 
 
-class CatLightStateIdle(State):
+class CatLightStateIdle(CatLightState):
     pass
 
 
-class CatLightStateWakingUp(State):
+class CatLightStateWakingUp(CatLightState):
     pass
 
 
-class CatLight(IProcess[Event, Command, State]):
-    def evolve(self, state: State, event: Event) -> State:
+class CatLight(IProcess[CatLightEvent, CatLightCommand, CatLightState]):
+    def evolve(self, state: CatLightState, event: CatLightEvent) -> CatLightState:
         match event:
             case CatLightEventSwitchedOn():
                 return CatLightStateWakingUp()
@@ -51,60 +51,74 @@ class CatLight(IProcess[Event, Command, State]):
             case _:
                 return state
 
-    def resume(self, state: State) -> Iterator[Command]:
+    def resume(self, state: CatLightState) -> Iterator[CatLightCommand]:
         match state:
             case CatLightStateWakingUp():
                 yield from [CatLightCommandWakeUp()]
             case _:
                 yield from []
 
-    def react(self, state: State, event: Event) -> Iterator[Command]:
+    def react(
+        self, state: CatLightState, event: CatLightEvent
+    ) -> Iterator[CatLightCommand]:
         match state, event:
             case CatLightStateWakingUp(), CatLightEventSwitchedOn():
                 yield from [CatLightCommandWakeUp()]
             case _:
                 yield from []
 
-    def initial_state(self) -> State:
+    def initial_state(self) -> CatLightState:
         return CatLightStateIdle()
 
-    def is_terminal(self, state: State) -> bool:
+    def is_terminal(self, state: CatLightState) -> bool:
         return isinstance(state, CatLightStateIdle)
 
 
-class CatCommandWakeUp(Command):
+class CatState(ABC):
     pass
 
 
-class CatCommandGetToSleep(Command):
+class CatEvent(ABC):
     pass
 
 
-class CatStateAsleep(State):
+class CatCommand(ABC):
     pass
 
 
-class CatStateAwake(State):
+class CatCommandWakeUp(CatCommand):
     pass
 
 
-class CatEventGotToSleep(Event):
+class CatCommandGetToSleep(CatCommand):
     pass
 
 
-class CatEventWokeUp(Event):
+class CatStateAsleep(CatState):
     pass
 
 
-class Cat(Decider[Event, Command, State]):
+class CatStateAwake(CatState):
+    pass
 
-    def initial_state(self) -> State:
+
+class CatEventGotToSleep(CatEvent):
+    pass
+
+
+class CatEventWokeUp(CatEvent):
+    pass
+
+
+class Cat(Decider[CatEvent, CatCommand, CatState]):
+
+    def initial_state(self) -> CatState:
         return CatStateAwake()
 
-    def is_terminal(self, state: State) -> bool:
+    def is_terminal(self, state: CatState) -> bool:
         return False
 
-    def decide(self, command: Command, state: State) -> Iterator[Event]:
+    def decide(self, command: CatCommand, state: CatState) -> Iterator[CatEvent]:
         match (command, state):
             case (CatCommandWakeUp(), CatStateAsleep()):
                 yield from [CatEventWokeUp()]
@@ -113,7 +127,7 @@ class Cat(Decider[Event, Command, State]):
             case _:
                 yield from []
 
-    def evolve(self, state: State, event: Event) -> State:
+    def evolve(self, state: CatState, event: CatEvent) -> CatState:
         match (state, event):
             case (CatStateAwake(), CatEventGotToSleep()):
                 return CatStateAsleep()
@@ -123,59 +137,71 @@ class Cat(Decider[Event, Command, State]):
                 return state
 
 
+class BulbState(ABC):
+    pass
+
+
+class BulbEvent(ABC):
+    pass
+
+
+class BulbCommand(ABC):
+    pass
+
+
 @dataclasses.dataclass(frozen=True)
-class BulbCommandFit(Command):
+class BulbCommandFit(BulbCommand):
     max_uses: int
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbCommandSwitchOn(Command):
+class BulbCommandSwitchOn(BulbCommand):
     pass
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbCommandSwitchOff(Command):
+class BulbCommandSwitchOff(BulbCommand):
     pass
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbEventFitted(Event):
+class BulbEventFitted(BulbEvent):
     max_uses: int
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbEventSwitchedOn(Event):
+class BulbEventSwitchedOn(BulbEvent):
     pass
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbEventSwitchedOff(Event):
+class BulbEventSwitchedOff(BulbEvent):
     pass
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbEventBlew(Event):
+class BulbEventBlew(BulbEvent):
     pass
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbStateNotFitted(State):
+class BulbStateNotFitted(BulbState):
     pass
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbStateWorking(State):
+class BulbStateWorking(BulbState):
     is_on: bool
     remaining_uses: int
 
 
 @dataclasses.dataclass(frozen=True)
-class BulbStateBlown(State):
+class BulbStateBlown(BulbState):
     pass
 
 
-class Bulb(Decider[Event, Command, State]):
-    def decide(self, command: Command, state: State) -> Iterator[Event]:
+class Bulb(Decider[BulbEvent, BulbCommand, BulbState]):
+    def decide(self, command: BulbCommand, state: BulbState) -> Iterator[BulbEvent]:
         match command, state:
             case BulbCommandFit(), BulbStateNotFitted():
                 yield from [BulbEventFitted(max_uses=command.max_uses)]
@@ -190,7 +216,7 @@ class Bulb(Decider[Event, Command, State]):
             case _:
                 yield from []
 
-    def evolve(self, state: State, event: Event) -> State:
+    def evolve(self, state: BulbState, event: BulbEvent) -> BulbState:
         match state, event:
             case BulbStateNotFitted(), BulbEventFitted():
                 return BulbStateWorking(is_on=False, remaining_uses=event.max_uses)
@@ -207,15 +233,20 @@ class Bulb(Decider[Event, Command, State]):
             case _:
                 return state
 
-    def initial_state(self) -> State:
+    def initial_state(self) -> BulbState:
         return BulbStateNotFitted()
 
-    def is_terminal(self, state: State) -> bool:
+    def is_terminal(self, state: BulbState) -> bool:
         return isinstance(state, BulbStateBlown)
 
 
 def test_cat_and_bulb() -> None:
-    cnb = InMemory(ComposeDecider.build(Cat(), Bulb()))
+    cat: Decider[CatEvent, CatCommand, CatState] = Cat()
+    bulb: Decider[BulbEvent, BulbCommand, BulbState] = Bulb()
+    composed_decider = ComposeDecider[
+        CatEvent, CatCommand, CatState, BulbEvent, BulbCommand, BulbState
+    ].build(cat, bulb)
+    cnb = InMemory(composed_decider)
 
     cnb(Left(CatCommandWakeUp()))
     cnb(Left(CatCommandGetToSleep()))
@@ -226,12 +257,12 @@ def test_cat_and_bulb() -> None:
     assert len(cnb.state) == 2
     assert type(cnb.state[0]) is CatStateAsleep
     assert type(cnb.state[1]) is BulbStateWorking
-    assert cast(BulbStateWorking, cnb.state[1]).is_on is False
-    assert cast(BulbStateWorking, cnb.state[1]).remaining_uses == 4
+    assert cnb.state[1].is_on is False
+    assert cnb.state[1].remaining_uses == 4
 
 
 def test_in_memory_many_cats() -> None:
-    in_memory = InMemory(ManyDecider[str, Event, Command, State](Cat))
+    in_memory = InMemory(ManyDecider[str, CatEvent, CatCommand, CatState](Cat))
 
     in_memory(("boulette", CatCommandGetToSleep()))
     in_memory(("boulette", CatCommandWakeUp()))
@@ -243,9 +274,12 @@ def test_in_memory_many_cats() -> None:
 
 
 def test_compose_process() -> None:
-    cat_and_bulb = ComposeDecider.build(Cat(), Bulb())
+    cat_and_bulb = ComposeDecider[
+        CatEvent, CatCommand, CatState, BulbEvent, BulbCommand, BulbState
+    ].build(Cat(), Bulb())
 
-    def select_event(event):
+    # event in, event out
+    def select_event(event: Either[CatEvent, BulbEvent]) -> CatLightEvent | None:
         match event:
             case Left(CatEventWokeUp()):
                 return CatLightEventWokeUp()
@@ -254,14 +288,24 @@ def test_compose_process() -> None:
             case _:
                 return None
 
-    def command_converter(command):
+    # command out, command in
+    def command_converter(command: CatLightCommand) -> Left[CatCommand]:
         match command:
             case CatLightCommandWakeUp():
                 return Left(CatCommandWakeUp())
             case _:
                 raise RuntimeError("Improper state")
 
-    adapted_process = ProcessAdapt.build(select_event, command_converter, CatLight())
+    # EI, CI, S, EO, CO
+    adapted_process = ProcessAdapt[
+        Either[CatEvent, BulbEvent],
+        Left[CatCommand],
+        CatLightState,
+        CatLightEvent,
+        CatLightCommand,
+    ].build(select_event, command_converter, CatLight())
+
+    # E, C, PS, DS
     cat_bulb = ProcessCombineWithDecider.build(adapted_process, cat_and_bulb)
 
     cat_b = InMemory(cat_bulb)

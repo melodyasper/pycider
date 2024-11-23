@@ -100,31 +100,48 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
         Returns:
             A new Process that can given input Events/Commands return new output variants.
         """
+        InnerEI = TypeVar("InnerEI")
+        InnerEO = TypeVar("InnerEO")
+        InnerCO = TypeVar("InnerCO")
+        InnerCI = TypeVar("InnerCI")
+        InnerS = TypeVar("InnerS")
 
-        class InternalProcess(IProcess[EI, CI, S]):
-            def evolve(self, state: S, event: EI) -> S:
-                new_event = select_event(event)
+        class InternalProcess(IProcess[InnerEI, InnerCI, InnerS]):
+            def evolve(self, state: InnerS, event: InnerEI) -> InnerS:
+                new_event = self._event_converter(event)
                 if new_event is None:
                     return state
-                return p.evolve(state, new_event)
+                return self._process.evolve(state, new_event)
 
-            def resume(self, state: S) -> Iterator[CI]:
-                yield from map(convert_command, p.resume(state))
+            def resume(self, state: InnerS) -> Iterator[InnerCI]:
+                yield from map(self._command_converter, self._process.resume(state))
 
-            def react(self, state: S, event: EI) -> Iterator[CI]:
-                new_event = select_event(event)
+            def react(self, state: InnerS, event: InnerEI) -> Iterator[InnerCI]:
+                new_event = self._event_converter(event)
                 if new_event is None:
                     yield from []
                 else:
-                    yield from map(convert_command, p.react(state, new_event))
+                    yield from map(
+                        self._command_converter, self._process.react(state, new_event)
+                    )
 
-            def initial_state(self) -> S:
-                return p.initial_state()
+            def initial_state(self) -> InnerS:
+                return self._process.initial_state()
 
-            def is_terminal(self, state: S) -> bool:
-                return p.is_terminal(state)
+            def is_terminal(self, state: InnerS) -> bool:
+                return self._process.is_terminal(state)
 
-        return InternalProcess()
+            def __init__(
+                self,
+                process: IProcess[InnerEO, InnerCO, InnerS],
+                event_converter: Callable[[InnerEI], InnerEO | None],
+                command_converter: Callable[[InnerCO], InnerCI],
+            ) -> None:
+                self._process = process
+                self._event_converter = event_converter
+                self._command_converter = command_converter
+
+        return InternalProcess(p, select_event, convert_command)
 
 
 def process_collect_fold(
