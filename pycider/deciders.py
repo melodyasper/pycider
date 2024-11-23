@@ -9,6 +9,18 @@ C = TypeVar("C")
 S = TypeVar("S")
 SI = TypeVar("SI")
 SO = TypeVar("SO")
+CX = TypeVar("CX")
+EX = TypeVar("EX")
+SX = TypeVar("SX")
+CY = TypeVar("CY")
+EY = TypeVar("EY")
+SY = TypeVar("SY")
+SA = TypeVar("SA")
+SB = TypeVar("SB")
+EO = TypeVar("EO")
+CO = TypeVar("CO")
+FEO = TypeVar("FEO")
+FSI = TypeVar("FSI")
 
 
 class BaseDecider(ABC, Generic[E, C, SI, SO]):
@@ -74,14 +86,6 @@ class Decider(BaseDecider[E, C, S, S], Generic[E, C, S]):
     """
 
     pass
-
-
-CX = TypeVar("CX")
-EX = TypeVar("EX")
-SX = TypeVar("SX")
-CY = TypeVar("CY")
-EY = TypeVar("EY")
-SY = TypeVar("SY")
 
 
 class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
@@ -171,8 +175,7 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
 class NeutralDecider:
     """For demonostration purposes."""
 
-    @classmethod
-    def build(cls):
+    def build(self):
         """Returns a demonstration neutral decider.
 
         Returns:
@@ -262,12 +265,6 @@ class ManyDecider(
         return {}
 
 
-EO = TypeVar("EO")
-CO = TypeVar("CO")
-FEO = TypeVar("FEO")
-FSI = TypeVar("FSI")
-
-
 class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
     """A decider that translates from one set of events/commands/states to another.
 
@@ -278,14 +275,22 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
     another type through translation.
     """
 
-    @classmethod
-    def build(
-        cls,
+    def __init__(
+        self,
         fci: Callable[[C], CO | None],
         fei: Callable[[E], EO | None],
         feo: Callable[[EO], E],
         fsi: Callable[[S], SO],
         decider: Decider[EO, CO, SO],
+    ) -> None:
+        self._fci = fci
+        self._fei = fei
+        self._feo = feo
+        self._fsi = fsi
+        self._decider = decider
+
+    def build(
+        self,
     ) -> BaseDecider[E, C, S, SO]:
         """Create an adapted decider.
 
@@ -302,31 +307,54 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
         Returns:
             A Decider with its functions wrapped by translation functions.
         """
+        InnerE = TypeVar("InnerE")
+        InnerC = TypeVar("InnerC")
+        InnerS = TypeVar("InnerS")
+        InnerSO = TypeVar("InnerSO")
+        InnerCO = TypeVar("InnerCO")
+        InnerEO = TypeVar("InnerEO")
 
-        class InternalDecider(BaseDecider[E, C, S, SO]):
-            def decide(self, command: C, state: S) -> Iterator[E]:
-                new_command = fci(command)
+        class InternalDecider(
+            BaseDecider[InnerE, InnerC, InnerS, InnerSO],
+            Generic[InnerE, InnerC, InnerS, InnerSO, InnerCO, InnerEO],
+        ):
+            def decide(self, command: InnerC, state: InnerS) -> Iterator[InnerE]:
+                new_command = self._fci(command)
                 if new_command is None:
                     return
-                yield from map(feo, decider.decide(new_command, fsi(state)))
+                yield from map(
+                    self._feo, self._decider.decide(new_command, self._fsi(state))
+                )
 
-            def evolve(self, state: S, event: E) -> SO:
-                new_event = fei(event)
+            def evolve(self, state: InnerS, event: InnerE) -> InnerSO:
+                new_event = self._fei(event)
                 if new_event is None:
-                    return fsi(state)
-                return decider.evolve(fsi(state), new_event)
+                    return self._fsi(state)
+                return self._decider.evolve(self._fsi(state), new_event)
 
-            def initial_state(self) -> SO:
-                return decider.initial_state()
+            def initial_state(self) -> InnerSO:
+                return self._decider.initial_state()
 
-            def is_terminal(self, state: S) -> bool:
-                return decider.is_terminal(fsi(state))
+            def is_terminal(self, state: InnerS) -> bool:
+                return self._decider.is_terminal(self._fsi(state))
 
-        return InternalDecider()
+            def __init__(
+                self,
+                fci: Callable[[InnerC], InnerCO | None],
+                fei: Callable[[InnerE], InnerEO | None],
+                feo: Callable[[InnerEO], InnerE],
+                fsi: Callable[[InnerS], InnerSO],
+                decider: Decider[InnerEO, InnerCO, InnerSO],
+            ) -> None:
+                self._fci = fci
+                self._fei = fei
+                self._feo = feo
+                self._fsi = fsi
+                self._decider = decider
 
-
-SA = TypeVar("SA")
-SB = TypeVar("SB")
+        return InternalDecider(
+            self._fci, self._fei, self._feo, self._fsi, self._decider
+        )
 
 
 class MapDecider(Generic[E, C, SI, SA, SB]):

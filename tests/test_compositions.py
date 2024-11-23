@@ -1,7 +1,6 @@
 import dataclasses
 from abc import ABC
 from collections.abc import Iterator
-from typing import Any, cast
 
 from pycider.deciders import ComposeDecider, Decider, ManyDecider
 from pycider.processes import IProcess, ProcessAdapt, ProcessCombineWithDecider
@@ -295,26 +294,16 @@ def test_compose_process() -> None:
                 return None
 
     # command out, command in
-    def command_converter(command: CatLightCommand) -> Left[CatCommand]:
+    def command_converter(command: CatLightCommand) -> Either[CatCommand, BulbCommand]:
         match command:
             case CatLightCommandWakeUp():
                 return Left(CatCommandWakeUp())
             case _:
                 raise RuntimeError("Improper state")
 
-    # EI, CI, S, EO, CO
-    adapted_process = ProcessAdapt[
-        Either[CatEvent, BulbEvent],
-        Left[CatCommand],
-        CatLightState,
-        CatLightEvent,
-        CatLightCommand,
-    ].build(select_event, command_converter, CatLight())
+    adapted_process = ProcessAdapt(select_event, command_converter, CatLight()).build()
 
-    # E, C, PS, DS
-    cat_bulb = ProcessCombineWithDecider[
-        Any, Any, CatLightState, tuple[CatState, BulbState]
-    ].build(adapted_process, cat_and_bulb)
+    cat_bulb = ProcessCombineWithDecider(adapted_process, cat_and_bulb).build()
 
     cat_b = InMemory(cat_bulb)
     cat_b(Right(BulbCommandFit(max_uses=5)))

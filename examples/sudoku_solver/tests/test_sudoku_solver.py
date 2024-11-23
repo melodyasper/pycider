@@ -35,10 +35,10 @@ def test_sudoku_solver_can_solve_simple_puzzle():
             case _:
                 return None
 
-    adapted_process = processes.ProcessAdapt().build(
+    adapted_process = processes.ProcessAdapt(
         select_event, convert_command, processor
-    )
-    program = processes.ProcessCombineWithDecider.build(adapted_process, decider)
+    ).build()
+    program = processes.ProcessCombineWithDecider(adapted_process, decider).build()
     solver = utils.InMemory(program)
 
     grid = [

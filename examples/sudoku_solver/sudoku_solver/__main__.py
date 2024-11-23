@@ -49,10 +49,10 @@ if __name__ == "__main__":
             case _:
                 return None
 
-    adapted_process: processes.IProcess[
-        process.Event, aggregate.Command, process.State
-    ] = processes.ProcessAdapt().build(select_event, convert_command, processor)
-    program = processes.ProcessCombineWithDecider.build(adapted_process, decider)
+    adapted_process = processes.ProcessAdapt(
+        select_event, convert_command, processor
+    ).build()
+    program = processes.ProcessCombineWithDecider(adapted_process, decider).build()
     solver = utils.InMemory(program)
 
     grid = [

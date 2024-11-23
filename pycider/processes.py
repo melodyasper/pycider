@@ -84,13 +84,17 @@ CO = TypeVar("CO")
 class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
     """Adapt process Commands / Events into new output Commands and Events."""
 
-    @classmethod
-    def build(
-        cls,
+    def __init__(
+        self,
         select_event: Callable[[EI], EO | None],
         convert_command: Callable[[CO], CI],
         p: IProcess[EO, CO, S],
-    ) -> IProcess[EI, CI, S]:
+    ) -> None:
+        self._p = p
+        self._select_event = select_event
+        self._convert_command = convert_command
+
+    def build(self) -> IProcess[EI, CI, S]:
         """Convert Commands/Events into output variants.
 
         Parameters:
@@ -141,7 +145,7 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
                 self._event_converter = event_converter
                 self._command_converter = command_converter
 
-        return InternalProcess(p, select_event, convert_command)
+        return InternalProcess(self._p, self._select_event, self._convert_command)
 
 
 def process_collect_fold(
@@ -162,10 +166,11 @@ DS = TypeVar("DS")
 class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
     """Combine a Processor with a Decider together."""
 
-    @classmethod
-    def build(
-        cls, proc: IProcess[E, C, PS], decider: Decider[E, C, DS]
-    ) -> Decider[E, C, tuple[DS, PS]]:
+    def __init__(self, proc: IProcess[E, C, PS], decider: Decider[E, C, DS]) -> None:
+        self._proc = proc
+        self._decider = decider
+
+    def build(self) -> Decider[E, C, tuple[DS, PS]]:
         """Combine a Process and a Decider into a single Decider.
 
         Parameters:
@@ -241,4 +246,4 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                     state[1]
                 )
 
-        return InternalDecider(proc, decider)
+        return InternalDecider(self._proc, self._decider)
