@@ -96,10 +96,13 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
     This code will make sure the proper decider receives the command.
     """
 
-    @classmethod
-    def build(
-        cls, left_dx: Decider[EX, CX, SX], right_dy: Decider[EY, CY, SY]
-    ) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
+    def __init__(
+        self, left_dx: Decider[EX, CX, SX], right_dy: Decider[EY, CY, SY]
+    ) -> None:
+        self._left_dx = left_dx
+        self._right_dy = right_dy
+
+    def build(self) -> Decider[Either[EX, EY], Either[CX, CY], tuple[SX, SY]]:
         """Given two deciders return a single one.
 
         Parameters:
@@ -162,7 +165,7 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
             def is_terminal(self, state: tuple[InnerSX, InnerSY]) -> bool:
                 return self._dx.is_terminal(state[0]) and self._dy.is_terminal(state[1])
 
-        return InternalDecider(left_dx, right_dy)
+        return InternalDecider(self._left_dx, self._right_dy)
 
 
 class NeutralDecider:

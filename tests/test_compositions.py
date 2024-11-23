@@ -253,11 +253,7 @@ class Bulb(Decider[BulbEvent, BulbCommand, BulbState]):
 
 
 def test_cat_and_bulb() -> None:
-    cat: Decider[CatEvent, CatCommand, CatState] = Cat()
-    bulb: Decider[BulbEvent, BulbCommand, BulbState] = Bulb()
-    composed_decider = ComposeDecider[
-        CatEvent, CatCommand, CatState, BulbEvent, BulbCommand, BulbState
-    ].build(cat, bulb)
+    composed_decider = ComposeDecider(Cat(), Bulb()).build()
     cnb = InMemory(composed_decider)
 
     cnb(Left(CatCommandWakeUp()))
@@ -286,9 +282,7 @@ def test_in_memory_many_cats() -> None:
 
 
 def test_compose_process() -> None:
-    cat_and_bulb = ComposeDecider[
-        CatEvent, CatCommand, CatState, BulbEvent, BulbCommand, BulbState
-    ].build(Cat(), Bulb())
+    cat_and_bulb = ComposeDecider(Cat(), Bulb()).build()
 
     # event in, event out
     def select_event(event: Either[CatEvent, BulbEvent]) -> CatLightEvent | None:
