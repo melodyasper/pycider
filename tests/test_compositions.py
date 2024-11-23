@@ -1,7 +1,7 @@
 import dataclasses
 from abc import ABC
 from collections.abc import Iterator
-from typing import cast
+from typing import Any, cast
 
 from pycider.deciders import ComposeDecider, Decider, ManyDecider
 from pycider.processes import IProcess, ProcessAdapt, ProcessCombineWithDecider
@@ -9,15 +9,27 @@ from pycider.types import Either, Left, Right
 from pycider.utils import InMemory
 
 
-class CatLightState(ABC):
+class State(ABC):
     pass
 
 
-class CatLightEvent(ABC):
+class Event(ABC):
     pass
 
 
-class CatLightCommand(ABC):
+class Command(ABC):
+    pass
+
+
+class CatLightState(State):
+    pass
+
+
+class CatLightEvent(Event):
+    pass
+
+
+class CatLightCommand(Command):
     pass
 
 
@@ -74,15 +86,15 @@ class CatLight(IProcess[CatLightEvent, CatLightCommand, CatLightState]):
         return isinstance(state, CatLightStateIdle)
 
 
-class CatState(ABC):
+class CatState(State):
     pass
 
 
-class CatEvent(ABC):
+class CatEvent(Event):
     pass
 
 
-class CatCommand(ABC):
+class CatCommand(Command):
     pass
 
 
@@ -137,15 +149,15 @@ class Cat(Decider[CatEvent, CatCommand, CatState]):
                 return state
 
 
-class BulbState(ABC):
+class BulbState(State):
     pass
 
 
-class BulbEvent(ABC):
+class BulbEvent(Event):
     pass
 
 
-class BulbCommand(ABC):
+class BulbCommand(Command):
     pass
 
 
@@ -306,7 +318,9 @@ def test_compose_process() -> None:
     ].build(select_event, command_converter, CatLight())
 
     # E, C, PS, DS
-    cat_bulb = ProcessCombineWithDecider.build(adapted_process, cat_and_bulb)
+    cat_bulb = ProcessCombineWithDecider[
+        Any, Any, CatLightState, tuple[CatState, BulbState]
+    ].build(adapted_process, cat_and_bulb)
 
     cat_b = InMemory(cat_bulb)
     cat_b(Right(BulbCommandFit(max_uses=5)))
@@ -319,6 +333,6 @@ def test_compose_process() -> None:
     assert len(cat_b.state[0]) == 2
     assert type(cat_b.state[0][0]) is CatStateAwake
     assert type(cat_b.state[0][1]) is BulbStateWorking
-    assert cast(BulbStateWorking, cat_b.state[0][1]).is_on is False
-    assert cast(BulbStateWorking, cat_b.state[0][1]).remaining_uses == 4
+    assert cat_b.state[0][1].is_on is False
+    assert cat_b.state[0][1].remaining_uses == 4
     assert type(cat_b.state[1]) is CatLightStateWakingUp
