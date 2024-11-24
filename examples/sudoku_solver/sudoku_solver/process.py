@@ -56,15 +56,15 @@ class SudokuProcess(processes.IProcess[Event, Command, State]):
         match event, state:
 
             # Event: StepCompleted -> Generate the next step command
-            case StepCompleted(), _:
+            case StepCompleted(), InitialState():
                 yield from [CheckCompletion()]
 
             # Event: BoardValidated -> Start solving if the board is valid
-            case BoardValidated(), _:
+            case BoardValidated(), InitialState():
                 yield from [RunSolverStep()]
 
             # Event: BoardNotYetComplete -> The board is not yet complete
-            case BoardNotYetComplete(), _:
+            case BoardNotYetComplete(), InitialState():
                 yield from [RunSolverStep()]
 
             # Default case: No action for unhandled events

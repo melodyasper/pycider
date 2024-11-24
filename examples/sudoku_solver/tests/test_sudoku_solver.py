@@ -10,7 +10,6 @@ def test_sudoku_solver_can_solve_simple_puzzle() -> None:
     def convert_command(
         command_out: process.Command,
     ) -> decider.Command:
-        print(f"{command_out=}")
         match command_out:
             case process.CheckCompletion():
                 return decider.CheckCompletion()
@@ -22,7 +21,6 @@ def test_sudoku_solver_can_solve_simple_puzzle() -> None:
     def select_event(
         event_in: decider.Event,
     ) -> process.Event | None:
-        print(f"{event_in=}")
         match event_in:
             case decider.BoardInitialized():
                 return process.StepCompleted()
