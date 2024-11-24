@@ -204,9 +204,7 @@ class NeutralDecider:
 I = TypeVar("I")  # identifier
 
 
-class ManyDecider(
-    Decider[tuple[I, E], tuple[I, C], MutableMapping[I, S]], Generic[I, E, C, S]
-):
+class ManyDecider(Generic[I]):
     """Manage many instances of the same Decider using a Identifier.
 
     This Decider is useful if you have multiple of the same Decider that
@@ -218,54 +216,85 @@ class ManyDecider(
     desired command to be executed.
     """
 
-    def __init__(self, decider: type[Decider[E, C, S]]) -> None:
-        """Create an instance of ManyDecider.
+    def _build(self):
+        """Returns a demonstration neutral decider.
 
-        Parameters:
-            decider: The type of decider we are holding multiples of.
+        Returns:
+            A decider which is always terminal and returns nothing.
         """
-        super().__init__()
-        self.decider = decider
+        InnerI = TypeVar("InnerI")
+        InnerE = TypeVar("InnerE")
+        InnerC = TypeVar("InnerC")
+        InnerS = TypeVar("InnerS")
 
-    def evolve(
-        self, state: MutableMapping[I, S], event: tuple[I, E]
-    ) -> MutableMapping[I, S]:
+        class InternalDecider(
+            Decider[
+                tuple[InnerI, InnerE],
+                tuple[InnerI, InnerC],
+                MutableMapping[InnerI, InnerS],
+            ],
+            Generic[InnerI, InnerE, InnerC, InnerS],
+        ):
+            def __init__(self, decider: Decider[InnerE, InnerC, InnerS]) -> None:
+                """Create an instance of ManyDecider.
 
-        identifier = event[0]
-        current_event = event[1]
+                Parameters:
+                    decider: The type of decider we are holding multiples of.
+                """
+                super().__init__()
+                self.decider = decider
 
-        current_state = state.get(identifier)
-        if current_state is None:
-            current_state = self.decider().initial_state()
+            def evolve(
+                self,
+                state: MutableMapping[InnerI, InnerS],
+                event: tuple[InnerI, InnerE],
+            ) -> MutableMapping[InnerI, InnerS]:
 
-        current_state = self.decider().evolve(current_state, current_event)
-        state[identifier] = current_state
+                identifier = event[0]
+                current_event = event[1]
 
-        return state
+                current_state = state.get(identifier)
+                if current_state is None:
+                    current_state = self.decider.initial_state()
 
-    def decide(
-        self, command: tuple[I, C], state: MutableMapping[I, S]
-    ) -> Iterator[tuple[I, E]]:
-        identifier = command[0]
-        current_command = command[1]
+                current_state = self.decider.evolve(current_state, current_event)
+                state[identifier] = current_state
 
-        current_state = state.get(identifier)
-        if current_state is None:
-            current_state = self.decider().initial_state()
+                return state
 
-        yield from map(
-            lambda event: (identifier, event),
-            self.decider().decide(current_command, current_state),
-        )
+            def decide(
+                self,
+                command: tuple[InnerI, InnerC],
+                state: MutableMapping[InnerI, InnerS],
+            ) -> Iterator[tuple[InnerI, InnerE]]:
+                identifier = command[0]
+                current_command = command[1]
 
-    def is_terminal(self, state: MutableMapping[I, S]) -> bool:
-        for member_state in state.values():
-            if not self.decider().is_terminal(member_state):
-                return False
-        return True
+                current_state = state.get(identifier)
+                if current_state is None:
+                    current_state = self.decider.initial_state()
 
-    def initial_state(self) -> MutableMapping[I, S]:
-        return {}
+                yield from map(
+                    lambda event: (identifier, event),
+                    self.decider.decide(current_command, current_state),
+                )
+
+            def is_terminal(self, state: MutableMapping[InnerI, InnerS]) -> bool:
+                for member_state in state.values():
+                    if not self.decider.is_terminal(member_state):
+                        return False
+                return True
+
+            def initial_state(self) -> MutableMapping[InnerI, InnerS]:
+                return {}
+
+        def constructor(decider: Decider[InnerE, InnerC, InnerS]):
+            return InternalDecider[I, InnerE, InnerC, InnerS](decider)
+
+        return constructor
+
+    def __init__(self) -> None:
+        self.build = self._build()
 
 
 class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
