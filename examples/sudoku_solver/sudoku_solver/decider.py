@@ -1,72 +1,72 @@
+import abc
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from sudoku_solver.sudoku.evaluator import SudokuEvaluator
-from sudoku_solver.sudoku.model import SudokuBoard
-from sudoku_solver.types import Command, Event, State
-
 from pycider.deciders import Decider
 
+from sudoku_solver.sudoku.evaluator import SudokuEvaluator
+from sudoku_solver.sudoku.model import SudokuBoard
+
 
 @dataclass(frozen=True)
-class SudokuBoardCommand(Command):
+class Command(abc.ABC):
     pass
 
 
 @dataclass(frozen=True)
-class SudokuBoardEvent(Event):
+class Event(abc.ABC):
     pass
 
 
 @dataclass(frozen=True)
-class SudokuBoardState(State):
+class State(abc.ABC):
     pass
 
 
 @dataclass(frozen=True)
-class InitializeSolver(SudokuBoardCommand):
+class InitializeSolver(Command):
     """Start the solver with the provided initial board."""
 
     grid: list[int | None]
 
 
 @dataclass(frozen=True)
-class RunSolverStep(SudokuBoardCommand):
+class RunSolverStep(Command):
     """Perform a step in the solving algorithm."""
 
     pass
 
 
 @dataclass(frozen=True)
-class ValidateBoardState(SudokuBoardCommand):
+class ValidateBoardState(Command):
     """Check if the current state of the board is valid."""
 
     pass
 
 
 @dataclass(frozen=True)
-class CheckCompletion(SudokuBoardCommand):
+class CheckCompletion(Command):
     """Verify if the board is completely solved."""
 
     pass
 
 
 @dataclass(frozen=True)
-class HandleError(SudokuBoardCommand):
+class HandleError(Command):
     """Process any detected error during solving."""
 
     message: str
 
 
 @dataclass(frozen=True)
-class BoardInitialized(SudokuBoardEvent):
+class BoardInitialized(Event):
     """Initialized"""
 
     board: SudokuBoard
 
 
 @dataclass(frozen=True)
-class StepCompleted(SudokuBoardEvent):
+class StepCompleted(Event):
     """A step in the solving process was successfully completed."""
 
     idx: int
@@ -74,49 +74,49 @@ class StepCompleted(SudokuBoardEvent):
 
 
 @dataclass(frozen=True)
-class BoardValidated(SudokuBoardEvent):
+class BoardValidated(Event):
     """The board was checked and found to be valid."""
 
     pass
 
 
 @dataclass(frozen=True)
-class BoardNotYetComplete(SudokuBoardEvent):
+class BoardNotYetComplete(Event):
     """The board was checked for completion but is not yet complete."""
 
     pass
 
 
 @dataclass(frozen=True)
-class SolutionFound(SudokuBoardEvent):
+class SolutionFound(Event):
     """The solver has successfully found a solution."""
 
     pass
 
 
 @dataclass(frozen=True)
-class SolutionFailed(SudokuBoardEvent):
+class SolutionFailed(Event):
     """The solver was unable to solve the board."""
 
     pass
 
 
 @dataclass(frozen=True)
-class ErrorDetected(SudokuBoardEvent):
+class ErrorDetected(Event):
     """An error was encountered during the solving process."""
 
     message: str
 
 
 @dataclass(frozen=True)
-class Initial(SudokuBoardState):
+class Initial(State):
     """The solver is initialized with the provided board."""
 
     pass
 
 
 @dataclass(frozen=True)
-class InitializedBase(SudokuBoardState):
+class InitializedBase(State):
     """The solver is now inialized."""
 
     board: SudokuBoard
@@ -158,24 +158,20 @@ class Unsolvable(InitializedBase):
 
 
 @dataclass(frozen=True)
-class Error(SudokuBoardState):
+class Error(State):
     """An error occurred during the solving process, requiring attention."""
 
     message: str
 
 
-class SudokuBoardAggregate(
-    Decider[SudokuBoardEvent, SudokuBoardCommand, SudokuBoardState]
-):
-    def initial_state(self) -> SudokuBoardState:
+class SudokuDecider(Decider[Event, Command, State]):
+    def initial_state(self) -> State:
         return Initial()
 
-    def is_terminal(self, state: SudokuBoardState) -> bool:
+    def is_terminal(self, state: State) -> bool:
         return isinstance(state, Unsolvable) or isinstance(state, Solved)
 
-    def decide(
-        self, command: SudokuBoardCommand, state: SudokuBoardState
-    ) -> Iterator[SudokuBoardEvent]:
+    def decide(self, command: Command, state: State) -> Iterator[Event]:
         match command, state:
             case InitializeSolver(grid=grid), Initial():
                 board = SudokuBoard(values=grid)
@@ -207,9 +203,7 @@ class SudokuBoardAggregate(
                     ErrorDetected(message=f"Unhandled: {command=} with {state=}.")
                 ]
 
-    def evolve(
-        self, state: SudokuBoardState, event: SudokuBoardEvent
-    ) -> SudokuBoardState:
+    def evolve(self, state: State, event: Event) -> State:
         match event, state:
             case BoardInitialized(board=board), Initial():
                 return Solving(board=board)

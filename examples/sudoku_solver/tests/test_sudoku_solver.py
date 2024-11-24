@@ -1,47 +1,47 @@
-from sudoku_solver import aggregate, process
+from sudoku_solver import decider, process
 
 from pycider import processes, utils
 
 
-def test_sudoku_solver_can_solve_simple_puzzle():
-    processor = process.SudokuProcess()
-    decider = aggregate.SudokuBoardAggregate()
+def test_sudoku_solver_can_solve_simple_puzzle() -> None:
+    test_process = process.SudokuProcess()
+    test_decider = decider.SudokuDecider()
 
     def convert_command(
-        command_out: process.SudokuProcessCommand,
-    ) -> aggregate.SudokuBoardCommand:
+        command_out: process.Command,
+    ) -> decider.Command:
         print(f"{command_out=}")
         match command_out:
-            case process.ProcessCheckCompletion():
-                return aggregate.CheckCompletion()
-            case process.ProcessRunSolverStep():
-                return aggregate.RunSolverStep()
+            case process.CheckCompletion():
+                return decider.CheckCompletion()
+            case process.RunSolverStep():
+                return decider.RunSolverStep()
             case _:
                 raise RuntimeError("Impossible area reached")
 
     def select_event(
-        event_in: aggregate.SudokuBoardEvent,
-    ) -> process.SudokuProcessEvent | None:
+        event_in: decider.Event,
+    ) -> process.Event | None:
         print(f"{event_in=}")
         match event_in:
-            case aggregate.BoardInitialized():
-                return process.ProcessStepCompleted()
-            case aggregate.StepCompleted():
-                return process.ProcessStepCompleted()
-            case aggregate.BoardValidated():
-                return process.ProcessBoardValidated()
-            case aggregate.BoardNotYetComplete():
-                return process.ProcessBoardNotYetComplete()
+            case decider.BoardInitialized():
+                return process.StepCompleted()
+            case decider.StepCompleted():
+                return process.StepCompleted()
+            case decider.BoardValidated():
+                return process.BoardValidated()
+            case decider.BoardNotYetComplete():
+                return process.BoardNotYetComplete()
             case _:
                 return None
 
     adapted_process = processes.ProcessAdapt(
-        select_event, convert_command, processor
+        select_event, convert_command, test_process
     ).build()
-    program = processes.ProcessCombineWithDecider(adapted_process, decider).build()
+    program = processes.ProcessCombineWithDecider(adapted_process, test_decider).build()
     solver = utils.InMemory(program)
 
-    grid = [
+    grid: list[int | None] = [
         4,
         None,
         None,
@@ -125,14 +125,13 @@ def test_sudoku_solver_can_solve_simple_puzzle():
         1,
     ]
 
-    events = solver(aggregate.InitializeSolver(grid=grid))
-    print(events)
+    events = solver(decider.InitializeSolver(grid=grid))
 
-    state = decider.initial_state()
+    state = test_decider.initial_state()
     for event in events:
-        state = decider.evolve(state, event)
+        state = test_decider.evolve(state, event)
 
-    assert isinstance(state, aggregate.Solved)
+    assert isinstance(state, decider.Solved)
     assert state.board.values == [
         4,
         6,
