@@ -241,7 +241,6 @@ class ManyDecider(Generic[I]):
                 Parameters:
                     decider: The type of decider we are holding multiples of.
                 """
-                super().__init__()
                 self.decider = decider
 
             def evolve(
