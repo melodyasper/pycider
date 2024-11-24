@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, MutableMapping
-from typing import Generic, TypeVar
+from typing import Generic, Type, TypeVar
 
 from pycider.types import Either, Left, Right
 
@@ -217,7 +217,7 @@ class ManyDecider(Generic[I]):
     """
 
     def _build(self):
-        """Returns a demonstration neutral decider.
+        """Returns a many decider decider.
 
         Returns:
             A decider which is always terminal and returns nothing.
@@ -293,7 +293,8 @@ class ManyDecider(Generic[I]):
 
         return constructor
 
-    def __init__(self) -> None:
+    def __init__(self, identifier_type: Type[I]) -> None:
+        self.identifier_type = identifier_type
         self.build = self._build()
 
 

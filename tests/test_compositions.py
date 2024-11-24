@@ -269,7 +269,7 @@ def test_cat_and_bulb() -> None:
 
 
 def test_in_memory_many_cats() -> None:
-    decider = ManyDecider[str]().build(Cat())
+    decider = ManyDecider(str).build(Cat())
     in_memory = InMemory(decider)
 
     in_memory(("boulette", CatCommandGetToSleep()))
