@@ -2,10 +2,10 @@ import abc
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from pycider.deciders import Decider
-
 from sudoku_solver.sudoku.evaluator import SudokuEvaluator
 from sudoku_solver.sudoku.model import SudokuBoard
+
+from pycider.deciders import Decider
 
 
 @dataclass(frozen=True)

@@ -8,27 +8,15 @@ from pycider.types import Either, Left, Right
 from pycider.utils import InMemory
 
 
-class State(ABC):
+class CatLightState(ABC):
     pass
 
 
-class Event(ABC):
+class CatLightEvent(ABC):
     pass
 
 
-class Command(ABC):
-    pass
-
-
-class CatLightState(State):
-    pass
-
-
-class CatLightEvent(Event):
-    pass
-
-
-class CatLightCommand(Command):
+class CatLightCommand(ABC):
     pass
 
 
@@ -85,15 +73,15 @@ class CatLight(IProcess[CatLightEvent, CatLightCommand, CatLightState]):
         return isinstance(state, CatLightStateIdle)
 
 
-class CatState(State):
+class CatState(ABC):
     pass
 
 
-class CatEvent(Event):
+class CatEvent(ABC):
     pass
 
 
-class CatCommand(Command):
+class CatCommand(ABC):
     pass
 
 
@@ -148,15 +136,15 @@ class Cat(Decider[CatEvent, CatCommand, CatState]):
                 return state
 
 
-class BulbState(State):
+class BulbState(ABC):
     pass
 
 
-class BulbEvent(Event):
+class BulbEvent(ABC):
     pass
 
 
-class BulbCommand(Command):
+class BulbCommand(ABC):
     pass
 
 
