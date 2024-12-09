@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, override
 
 from pycider.deciders import Decider
 
@@ -113,15 +113,18 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
         InnerS = TypeVar("InnerS")
 
         class InternalProcess(IProcess[InnerEI, InnerCI, InnerS]):
+            @override
             def evolve(self, state: InnerS, event: InnerEI) -> InnerS:
                 new_event = self._event_converter(event)
                 if new_event is None:
                     return state
                 return self._process.evolve(state, new_event)
 
+            @override
             def resume(self, state: InnerS) -> Iterator[InnerCI]:
                 yield from map(self._command_converter, self._process.resume(state))
 
+            @override
             def react(self, state: InnerS, event: InnerEI) -> Iterator[InnerCI]:
                 new_event = self._event_converter(event)
                 if new_event is None:
@@ -131,9 +134,11 @@ class ProcessAdapt(Generic[EI, CI, S, EO, CO]):
                         self._command_converter, self._process.react(state, new_event)
                     )
 
+            @override
             def initial_state(self) -> InnerS:
                 return self._process.initial_state()
 
+            @override
             def is_terminal(self, state: InnerS) -> bool:
                 return self._process.is_terminal(state)
 
@@ -215,6 +220,7 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                 self._proc = process
                 self._decider = decision
 
+            @override
             def decide(
                 self, command: InnerC, state: tuple[InnerDS, InnerPS]
             ) -> Iterator[InnerE]:
@@ -234,6 +240,7 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                     commands.extend(new_commands)
                     yield from new_events
 
+            @override
             def evolve(
                 self, state: tuple[InnerDS, InnerPS], event: InnerE
             ) -> tuple[InnerDS, InnerPS]:
@@ -242,9 +249,11 @@ class ProcessCombineWithDecider(Generic[E, C, PS, DS]):
                     self._proc.evolve(state[1], event),
                 )
 
+            @override
             def initial_state(self) -> tuple[InnerDS, InnerPS]:
                 return (self._decider.initial_state(), self._proc.initial_state())
 
+            @override
             def is_terminal(self, state: tuple[InnerDS, InnerPS]) -> bool:
                 return self._decider.is_terminal(state[0]) and self._proc.is_terminal(
                     state[1]

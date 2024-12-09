@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, MutableMapping
-from typing import Generic, Type, TypeVar
+from typing import Generic, Type, TypeVar, override
 
 from pycider.types import Either, Left, Right
 
@@ -142,6 +142,7 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
                 self._dx = dx
                 self._dy = dy
 
+            @override
             def decide(
                 self, command: Either[InnerCX, InnerCY], state: tuple[InnerSX, InnerSY]
             ) -> Iterator[Either[InnerEX, InnerEY]]:
@@ -155,6 +156,7 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
                             lambda v: Right(v), self._dy.decide(command.value, state[1])
                         )
 
+            @override
             def evolve(
                 self,
                 state: tuple[InnerSX, InnerSY],
@@ -166,9 +168,11 @@ class ComposeDecider(Generic[EX, CX, SX, EY, CY, SY]):
                     case Right():
                         return (state[0], self._dy.evolve(state[1], event.value))
 
+            @override
             def initial_state(self) -> tuple[InnerSX, InnerSY]:
                 return (self._dx.initial_state(), self._dy.initial_state())
 
+            @override
             def is_terminal(self, state: tuple[InnerSX, InnerSY]) -> bool:
                 return self._dx.is_terminal(state[0]) and self._dy.is_terminal(state[1])
 
@@ -186,15 +190,19 @@ class NeutralDecider:
         """
 
         class InternalDecider(Decider[None, None, tuple[()]]):
+            @override
             def decide(self, command: None, state: tuple[()]) -> Iterator[None]:
                 yield from []
 
+            @override
             def evolve(self, state: tuple[()], event: None) -> tuple[()]:
                 return ()
 
+            @override
             def initial_state(self) -> tuple[()]:
                 return ()
 
+            @override
             def is_terminal(self, state: tuple[()]) -> bool:
                 return True
 
@@ -243,6 +251,7 @@ class ManyDecider(Generic[I]):
                 """
                 self.decider = decider
 
+            @override
             def evolve(
                 self,
                 state: MutableMapping[InnerI, InnerS],
@@ -261,6 +270,7 @@ class ManyDecider(Generic[I]):
 
                 return state
 
+            @override
             def decide(
                 self,
                 command: tuple[InnerI, InnerC],
@@ -278,12 +288,14 @@ class ManyDecider(Generic[I]):
                     self.decider.decide(current_command, current_state),
                 )
 
+            @override
             def is_terminal(self, state: MutableMapping[InnerI, InnerS]) -> bool:
                 for member_state in state.values():
                     if not self.decider.is_terminal(member_state):
                         return False
                 return True
 
+            @override
             def initial_state(self) -> MutableMapping[InnerI, InnerS]:
                 return {}
 
@@ -352,6 +364,7 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
             BaseDecider[InnerE, InnerC, InnerS, InnerSO],
             Generic[InnerE, InnerC, InnerS, InnerSO, InnerCO, InnerEO],
         ):
+            @override
             def decide(self, command: InnerC, state: InnerS) -> Iterator[InnerE]:
                 new_command = self._fci(command)
                 if new_command is None:
@@ -360,15 +373,18 @@ class AdaptDecider(Generic[E, C, S, EO, CO, SO]):
                     self._feo, self._decider.decide(new_command, self._fsi(state))
                 )
 
+            @override
             def evolve(self, state: InnerS, event: InnerE) -> InnerSO:
                 new_event = self._fei(event)
                 if new_event is None:
                     return self._fsi(state)
                 return self._decider.evolve(self._fsi(state), new_event)
 
+            @override
             def initial_state(self) -> InnerSO:
                 return self._decider.initial_state()
 
+            @override
             def is_terminal(self, state: InnerS) -> bool:
                 return self._decider.is_terminal(self._fsi(state))
 
@@ -418,15 +434,19 @@ class MapDecider(Generic[E, C, SI, SA, SB]):
         InnerSB = TypeVar("InnerSB")
 
         class InternalDecider(BaseDecider[InnerE, InnerC, InnerSI, InnerSB]):
+            @override
             def decide(self, command: InnerC, state: InnerSI) -> Iterator[InnerE]:
                 yield from self._d.decide(command, state)
 
+            @override
             def evolve(self, state: InnerSI, event: InnerE) -> InnerSB:
                 return self._f(self._d.evolve(state, event))
 
+            @override
             def initial_state(self) -> InnerSB:
                 return self._f(self._d.initial_state())
 
+            @override
             def is_terminal(self, state: InnerSI) -> bool:
                 return self._d.is_terminal(state)
 
@@ -462,18 +482,22 @@ class Map2Decider(Generic[E, C, S, SX, SY, SI]):
         InnerSI = TypeVar("InnerSI")
 
         class InternalDecider(BaseDecider[InnerE, InnerC, InnerSI, InnerS]):
+            @override
             def decide(self, command: InnerC, state: InnerSI) -> Iterator[InnerE]:
                 yield from self._dx.decide(command, state)
                 yield from self._dy.decide(command, state)
 
+            @override
             def evolve(self, state: InnerSI, event: InnerE) -> InnerS:
                 sx = self._dx.evolve(state, event)
                 sy = self._dy.evolve(state, event)
                 return self._f(sx, sy)
 
+            @override
             def initial_state(self) -> InnerS:
                 return self._f(self._dx.initial_state(), self._dy.initial_state())
 
+            @override
             def is_terminal(self, state: InnerSI) -> bool:
                 return self._dx.is_terminal(state) and self._dy.is_terminal(state)
 
